@@ -1,0 +1,2419 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DailyJon">
+<meta name="theme-color" content="#0d1020">
+<meta name="description" content="DailyJon — planner harian grid 10 menit dengan asisten AI. Gratis, tanpa iklan.">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>DailyJon</title>
+<style>
+:root{
+  --bg:#f2f2f7;--card:rgba(255,255,255,.82);--solid:#fff;--text:#0b0b0f;--muted:#8a8a8e;--line:rgba(60,60,67,.13);
+  --cell:#e6e6eb;--cell-h:#dddde3;--accent:#0A84FF;--accent2:#5E5CE6;--danger:#FF3B30;--ok:#30D158;
+  --mono:#c7c7cc;--glass:rgba(255,255,255,.6);--glass-brd:rgba(255,255,255,.75);--glass-hi:rgba(255,255,255,.9);
+  --shadow:0 8px 30px rgba(0,0,0,.07);--hdr:58px;--tab:84px;--kb:0px;
+  --st:env(safe-area-inset-top);--sb:env(safe-area-inset-bottom);
+}
+[data-theme=dark]{
+  --bg:#000;--card:rgba(28,28,30,.86);--solid:#1c1c1e;--text:#fff;--muted:#8e8e93;--line:rgba(84,84,88,.38);
+  --cell:#262629;--cell-h:#2c2c30;--mono:#3a3a3c;--glass:rgba(36,36,40,.55);--glass-brd:rgba(255,255,255,.13);--glass-hi:rgba(255,255,255,.18);
+  --shadow:0 8px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);overscroll-behavior-x:none}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",Roboto,Inter,sans-serif;
+  -webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;font-size:15px;min-height:100vh;overscroll-behavior-y:none}
+.bgfx{position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(60% 40% at 0% 0%,color-mix(in srgb,#0A84FF 14%,transparent),transparent 70%),
+             radial-gradient(50% 40% at 100% 20%,color-mix(in srgb,#BF5AF2 12%,transparent),transparent 70%),
+             radial-gradient(60% 40% at 50% 100%,color-mix(in srgb,#30D158 10%,transparent),transparent 70%)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+input,select,textarea{font:inherit;font-size:16px;color:var(--text)}
+.muted{color:var(--muted)}
+[hidden]{display:none!important}
+.glass{background:var(--glass);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+  box-shadow:inset 0 1px 0 var(--glass-hi),inset 0 0 0 1px var(--glass-brd),var(--shadow)}
+
+/* ---------- Header ---------- */
+header{position:sticky;top:0;z-index:30;padding:calc(var(--st) + 8px) 16px 8px;
+  background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
+  display:flex;align-items:center;gap:8px;min-height:calc(var(--hdr) + var(--st))}
+.h-date{position:relative;flex:1;min-width:0}
+.h-title{font-size:24px;font-weight:800;letter-spacing:-.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-title .chev{font-size:13px;color:var(--muted);margin-left:4px}
+.h-sub{font-size:13px;color:var(--muted);margin-top:1px;font-weight:500}
+.h-date input{position:absolute;inset:0;opacity:0;width:100%;height:100%;-webkit-appearance:none}
+.ibtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none}
+.ibtn svg{width:20px;height:20px}
+.pill{padding:9px 13px;border-radius:999px;background:var(--accent);color:#fff;font-weight:700;font-size:13px}
+.h-view-title{flex:1;font-size:32px;font-weight:800;letter-spacing:-.8px}
+.addbtn{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 45%,transparent)}
+.addbtn svg{width:22px;height:22px}
+
+/* ---------- Views ---------- */
+.view{display:none;padding-bottom:calc(var(--tab) + var(--sb) + 24px)}
+.view.active{display:block}
+
+/* now card */
+.nowcard{margin:4px 14px 12px;border-radius:24px;padding:14px 16px}
+.nc-row{display:flex;align-items:center;gap:12px}
+.nc-row .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.nc-row .dot.idle{background:var(--mono)}
+.nc-main{flex:1;min-width:0}
+.nc-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700}
+.nc-title{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nc-right{text-align:right}.nc-right b{display:block;font-size:18px}.nc-right small{color:var(--muted);font-size:11px}
+.bar{height:6px;border-radius:6px;background:var(--cell);margin-top:7px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:6px}
+.nc-next{font-size:13.5px;color:var(--muted);margin-top:8px}
+.nc-next:first-child{margin-top:0}
+.nc-next b{color:var(--text)}
+.hint{margin:0 14px 10px;font-size:12.5px;color:var(--muted);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:16px;padding:10px 12px;line-height:1.4}
+.install{margin:0 14px 12px;font-size:13px;border-radius:18px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+.install b{color:var(--accent)}
+
+/* schedule grid */
+.grid{padding:0 14px 0 4px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.colhdr{display:grid;grid-template-columns:38px 1fr;position:sticky;top:calc(var(--hdr) + var(--st));z-index:6;
+  background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:4px 0 5px}
+.colhdr .cols{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:600}
+.colhdr .cols span{padding-left:3px}
+.row{display:grid;grid-template-columns:38px 1fr;height:40px;margin-bottom:3px}
+.hl{font-size:11px;color:var(--muted);text-align:right;padding:3px 8px 0 0;font-variant-numeric:tabular-nums;font-weight:700}
+.row.now .hl{color:#FF375F}
+.cells{position:relative;display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
+.c{grid-row:1;background:var(--cell);border-radius:9px}
+.c:nth-child(-n+3){background:var(--cell-h)}
+.row.off .c{opacity:.5}
+.seg{grid-row:1;z-index:1;border-radius:9px;padding:2px 7px;font-size:11px;line-height:1.15;color:#fff;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;font-weight:700;min-width:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.28)}
+.seg .t,.seg small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg small{font-weight:600;opacity:.85;font-size:9.5px;font-variant-numeric:tabular-nums}
+.seg.cont .t{opacity:.72;font-weight:600}
+.seg.past{filter:saturate(.75);opacity:.86}
+.mono .seg{background:var(--mono)!important;color:var(--text)!important}
+.selseg{grid-row:1;z-index:2;border-radius:9px;pointer-events:none;background:color-mix(in srgb,var(--accent) 38%,transparent);box-shadow:inset 0 0 0 2px var(--accent)}
+.nowline{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1.5px;z-index:3;pointer-events:none;border-radius:2px;
+  background:repeating-linear-gradient(180deg,#FF375F 0 4px,transparent 4px 7px)}
+.nowline::before{content:"";position:absolute;top:-3px;left:-2.5px;width:8px;height:8px;border-radius:50%;background:#FF375F}
+.selinfo{position:fixed;left:50%;top:calc(var(--st) + 10px);transform:translateX(-50%);z-index:60;background:var(--text);color:var(--bg);
+  padding:9px 15px;border-radius:999px;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;box-shadow:var(--shadow)}
+
+/* ---------- Floating tab bar ---------- */
+nav.tabs{position:fixed;left:12px;right:12px;bottom:calc(var(--sb) + 6px);z-index:40;display:flex;justify-content:space-around;
+  padding:6px;border-radius:32px}
+nav.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;color:var(--muted);font-weight:600;padding:7px 0 6px;position:relative;border-radius:26px;transition:background .2s,color .2s}
+nav.tabs button svg{width:24px;height:24px}
+nav.tabs button.on{color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,transparent)}
+nav.tabs .badge{position:absolute;top:4px;left:calc(50% + 8px);width:8px;height:8px;border-radius:50%;background:#FF375F}
+body.kb nav.tabs{display:none}
+
+/* ---------- Cards / generic ---------- */
+.card{border-radius:24px;padding:16px;margin:12px 14px;scroll-margin-top:100px}
+.card h3{margin:0 0 10px;font-size:17px;letter-spacing:-.2px}
+.seg-ctl{display:flex;background:var(--cell);border-radius:14px;padding:3px;margin:6px 14px 0}
+.seg-ctl button{flex:1;padding:8px;border-radius:11px;font-weight:700;font-size:13.5px;color:var(--muted)}
+.seg-ctl button.on{background:var(--solid);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi{background:var(--cell);border-radius:16px;padding:10px 11px}
+.kpi b{display:block;font-size:19px;letter-spacing:-.3px}.kpi span{font-size:11.5px;color:var(--muted)}
+.catbar{display:flex;align-items:center;gap:10px;margin:10px 0}
+.catbar .nm{width:84px;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.catbar .tr{flex:1;height:10px;background:var(--cell);border-radius:6px;overflow:hidden}
+.catbar .tr i{display:block;height:100%;border-radius:6px}
+.catbar .v{width:96px;white-space:nowrap;text-align:right;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.week{display:flex;gap:6px;align-items:flex-end;height:150px;margin-top:6px}
+.week .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
+.week .stack{flex:1;width:100%;display:flex;flex-direction:column-reverse;border-radius:10px;overflow:hidden;background:var(--cell)}
+.week .stack i{display:block;width:100%}
+.week .lb{font-size:11px;color:var(--muted);font-weight:600}
+.week .col.sel .lb{color:var(--accent)}
+.list-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.list-item:last-child{border-bottom:0}
+
+/* focus */
+.ring-wrap{display:grid;place-items:center;margin:18px 0 6px;position:relative}
+.ring-wrap svg{width:250px;height:250px;transform:rotate(-90deg)}
+.ring-txt{position:absolute;text-align:center}
+.ring-txt b{display:block;font-size:48px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.ring-txt span{color:var(--muted);font-size:13.5px;max-width:180px;display:inline-block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 13px;border-radius:999px;background:var(--cell);font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:6px}
+.chip.on{background:var(--accent);color:#fff}
+.chip .d{width:10px;height:10px;border-radius:50%}
+.chip.on .d{box-shadow:0 0 0 2px #fff}
+.btn{padding:14px 16px;border-radius:16px;font-weight:700;background:var(--cell);text-align:center}
+.btn.pri{background:var(--accent);color:#fff}
+.btn.dan{color:var(--danger)}
+.btn-row{display:flex;gap:8px;margin-top:12px}.btn-row .btn{flex:1}
+
+/* settings */
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.set-row:last-child{border-bottom:0}
+.set-row .lbl{font-size:15px}.set-row .lbl small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.set-row select{background:var(--cell);border:0;border-radius:11px;padding:7px 10px;font-size:14px}
+.tg{position:relative;width:51px;height:31px;flex:none}
+.tg input{opacity:0;width:0;height:0}
+.tg span{position:absolute;inset:0;background:var(--mono);border-radius:31px;transition:.2s}
+.tg span::after{content:"";position:absolute;width:27px;height:27px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 2px 4px rgba(0,0,0,.25)}
+.tg input:checked+span{background:var(--ok)}
+.tg input:checked+span::after{transform:translateX(20px)}
+.cat-ed{display:flex;align-items:center;gap:8px;margin:8px 0}
+.cat-ed input[type=color]{width:38px;height:34px;border:0;padding:0;background:none;border-radius:10px;-webkit-appearance:none}
+.cat-ed input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.cat-ed input[type=color]::-webkit-color-swatch{border:0;border-radius:10px}
+.cat-ed input[type=text]{flex:1;background:var(--cell);border:0;border-radius:11px;padding:8px 10px}
+.cat-ed button{width:34px;height:34px;border-radius:11px;background:var(--cell);color:var(--danger);font-weight:800}
+.small{font-size:12.5px;color:var(--muted);line-height:1.45}
+.prog{height:8px;border-radius:6px;background:var(--cell);overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+
+/* chat */
+.chat{padding:6px 14px 8px}
+.msg{max-width:88%;padding:10px 14px;border-radius:20px;margin:7px 0;white-space:pre-wrap;line-height:1.42;font-size:15px;word-wrap:break-word}
+.msg.me{background:var(--accent);color:#fff;margin-left:auto;border-bottom-right-radius:6px}
+.msg.ai{background:var(--card);box-shadow:inset 0 0 0 1px var(--glass-brd),var(--shadow);border-bottom-left-radius:6px}
+.msg .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.msg .acts button{padding:7px 12px;border-radius:12px;background:var(--cell);font-weight:700;font-size:13px}
+.msg .acts button.pri{background:var(--accent);color:#fff}
+.msg.typing{color:var(--muted)}
+.ai-head{display:flex;align-items:center;gap:8px}
+.ai-badge{font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:999px;background:var(--cell);color:var(--muted)}
+.ai-badge.smart{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff}
+.sugs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
+.sugs::-webkit-scrollbar{display:none}
+.sugs .chip{white-space:nowrap;flex:none}
+.chatbar{position:fixed;left:12px;right:12px;z-index:35;bottom:calc(var(--tab) + var(--sb) + 2px);padding:6px;display:flex;gap:8px;border-radius:30px}
+body.kb .chatbar{bottom:calc(var(--kb) + 6px)}
+.chatbar input{flex:1;border:0;background:transparent;padding:10px 12px;outline:none}
+.chatbar button{width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none}
+.chatbar button svg{width:20px;height:20px}
+#view-ai{padding-bottom:calc(var(--tab) + var(--sb) + 80px)}
+
+/* sheet */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
+.backdrop.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:var(--kb);z-index:80;background:color-mix(in srgb,var(--solid) 92%,transparent);
+  backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);border-radius:32px 32px 0 0;
+  padding:8px 18px calc(var(--sb) + 18px);max-height:90vh;overflow:auto;transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);
+  box-shadow:0 -10px 40px rgba(0,0,0,.25),inset 0 1px 0 var(--glass-hi);-webkit-overflow-scrolling:touch}
+.sheet.open{transform:none}
+.grab{width:38px;height:5px;border-radius:5px;background:var(--mono);margin:4px auto 12px}
+.sh-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;gap:10px}
+.sh-head b{font-size:20px;letter-spacing:-.3px}.sh-head span{font-size:13px;color:var(--muted)}
+.fld{width:100%;border:0;background:var(--cell);border-radius:16px;padding:13px 14px;outline:none}
+textarea.fld{resize:none;height:70px;margin-top:10px}
+.trow{display:flex;align-items:flex-end;gap:8px;margin:12px 0}
+.trow label{flex:1;font-size:12px;color:var(--muted);font-weight:600}
+.trow select{display:block;width:100%;margin-top:4px;border:0;background:var(--cell);border-radius:14px;padding:11px 10px;font-variant-numeric:tabular-nums;-webkit-appearance:none;appearance:none;font-weight:700}
+.trow .arrow{padding-bottom:12px;color:var(--muted)}
+.trow .dur{flex:none;min-width:64px;text-align:right;font-weight:700;padding-bottom:12px;font-size:14px}
+.sec-lbl{font-size:12px;color:var(--muted);font-weight:700;margin:14px 0 7px;text-transform:uppercase;letter-spacing:.6px}
+.menu-item{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--line);font-size:16px;width:100%;text-align:left}
+.menu-item:last-child{border-bottom:0}
+.menu-item.dan{color:var(--danger)}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:calc(var(--tab) + var(--sb) + 10px);transform:translate(-50%,30px);opacity:0;z-index:90;
+  background:var(--text);color:var(--bg);padding:12px 16px;border-radius:18px;font-weight:600;font-size:14px;display:flex;gap:12px;align-items:center;
+  transition:.25s;pointer-events:none;max-width:92vw;box-shadow:var(--shadow)}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{color:#0A84FF;font-weight:800}
+body.v-ai .toast{bottom:calc(var(--tab) + var(--sb) + 70px)}
+
+/* ================= KEBIASAAN ================= */
+.hweek{display:flex;gap:4px;margin:2px 10px 6px;align-items:center}
+.hweek .nav{width:26px;height:44px;color:var(--muted);font-size:18px;flex:none}
+.hday{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px 0 8px;border-radius:18px;font-weight:600}
+.hday .wd{font-size:11px;color:var(--muted);text-transform:uppercase}
+.hday .ring{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:13.5px;font-weight:700;
+  background:conic-gradient(var(--ok) calc(var(--p)*1%),var(--cell) 0)}
+.hday .ring span{width:27px;height:27px;border-radius:50%;background:var(--bg);display:grid;place-items:center}
+.hday.full .ring span{background:var(--ok);color:#fff}
+.hday.sel{background:var(--card);box-shadow:inset 0 0 0 1px var(--glass-brd),var(--shadow)}
+.hday.sel .wd{color:var(--accent)}
+.hday.fut{opacity:.45}
+.hsum{display:flex;align-items:center;gap:16px}
+.bigring{width:74px;height:74px;flex:none;position:relative}
+.bigring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.bigring b{position:absolute;inset:0;display:grid;place-items:center;font-size:18px;font-weight:800;letter-spacing:-.3px}
+.hsum .t1{font-size:19px;font-weight:800;letter-spacing:-.3px}
+.hsum .t2{font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+.hgroup{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin:18px 20px 6px;display:flex;justify-content:space-between}
+.hcard{position:relative;margin:10px 14px;border-radius:24px;padding:12px 12px 12px 12px;overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none;
+  background:var(--card);box-shadow:inset 0 1px 0 var(--glass-hi),inset 0 0 0 1px var(--glass-brd),var(--shadow);transition:transform .15s}
+.hcard:active{transform:scale(.985)}
+.hcard.dragging{transform:scale(1.01)}
+.hfill{position:absolute;left:0;top:0;bottom:0;background:color-mix(in srgb,var(--hc) 17%,transparent);transition:width .25s;pointer-events:none}
+.hcard.dragging .hfill{transition:none;background:color-mix(in srgb,var(--hc) 28%,transparent)}
+.hrow{position:relative;display:flex;align-items:center;gap:12px}
+.hicon{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-size:24px;flex:none;
+  background:color-mix(in srgb,var(--hc) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--hc) 35%,transparent)}
+.hmain{flex:1;min-width:0}
+.hname{font-size:16.5px;font-weight:700;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hsub{font-size:13px;color:var(--muted);margin-top:2px;display:flex;gap:8px;align-items:center;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.hsub .st{color:#FF9F0A;font-weight:700}
+.hsub .fail{color:var(--danger);font-weight:700}
+.hact{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:20px;font-weight:800;position:relative;
+  background:color-mix(in srgb,var(--hc) 16%,transparent);color:var(--hc);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--hc) 55%,transparent)}
+.hact svg{width:22px;height:22px}
+.hact.done{background:var(--hc);color:#fff;box-shadow:none}
+.hact.run{background:var(--hc);color:#fff;animation:pulse 1.6s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--hc) 25%,transparent)}}
+.hact .mini{position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(var(--hc) calc(var(--p)*1%),transparent 0);
+  -webkit-mask:radial-gradient(circle,transparent 24px,#000 25px);mask:radial-gradient(circle,transparent 24px,#000 25px)}
+.hcard.failed .hicon,.hcard.failed .hmain{opacity:.55}
+.hcard.off{opacity:.55}
+.hchart{position:relative;margin-top:10px}
+.hgrid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px}
+.hgrid i{aspect-ratio:1;border-radius:3px;background:var(--cell)}
+.hbars{display:flex;gap:4px;align-items:flex-end;height:34px}
+.hbars i{flex:1;border-radius:4px;background:var(--cell);min-height:4px;position:relative;overflow:hidden}
+.hbars i b{position:absolute;left:0;right:0;bottom:0;background:var(--hc);border-radius:4px}
+.hline svg{width:100%;height:40px;display:block}
+.hdrag{position:absolute;right:66px;top:50%;transform:translateY(-50%);font-size:22px;font-weight:800;color:var(--hc);pointer-events:none}
+.hempty{text-align:center;padding:30px 24px 10px}
+.hempty .e{font-size:54px}
+.hempty h3{font-size:21px;margin:10px 0 6px}
+.tpl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tpl button{display:flex;align-items:center;gap:9px;padding:11px;border-radius:16px;background:var(--cell);font-weight:600;font-size:14px;text-align:left}
+.tpl button span{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:18px;flex:none}
+.emo{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.emo button{aspect-ratio:1;border-radius:12px;font-size:21px;background:var(--cell)}
+.emo button.on{box-shadow:inset 0 0 0 2.5px var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.colors{display:flex;flex-wrap:wrap;gap:10px}
+.colors button{width:34px;height:34px;border-radius:50%}
+.colors button.on{box-shadow:0 0 0 3px var(--bg),0 0 0 5.5px var(--text)}
+.typeseg{display:grid;grid-template-columns:repeat(4,1fr);background:var(--cell);border-radius:14px;padding:3px;gap:2px}
+.typeseg button{padding:9px 2px;border-radius:11px;font-weight:700;font-size:12.5px;color:var(--muted)}
+.typeseg button.on{background:var(--solid);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.dows{display:flex;gap:6px}
+.dows button{flex:1;aspect-ratio:1;max-width:44px;border-radius:50%;background:var(--cell);font-weight:700;font-size:13px}
+.dows button.on{background:var(--accent);color:#fff}
+.dates{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.dates button{aspect-ratio:1;border-radius:50%;background:var(--cell);font-weight:600;font-size:13px}
+.dates button.on{background:var(--accent);color:#fff}
+.nrow{display:flex;gap:8px;align-items:center}
+.nrow .fld{flex:1}
+.stepper{display:flex;align-items:center;gap:10px;justify-content:center;margin:10px 0}
+.stepper button{width:52px;height:52px;border-radius:50%;background:var(--cell);font-size:26px;font-weight:700}
+.stepper input{width:110px;text-align:center;font-size:28px;font-weight:800;border:0;background:transparent;outline:none}
+.hstats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:4px 0 6px}
+.hstats div{background:var(--cell);border-radius:16px;padding:10px 6px;text-align:center}
+.hstats b{display:block;font-size:19px;letter-spacing:-.3px}
+.hstats span{font-size:10.5px;color:var(--muted);font-weight:600}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.cal .wd{font-size:11px;color:var(--muted);font-weight:700}
+.cal button{aspect-ratio:1;border-radius:50%;font-size:13.5px;font-weight:600;position:relative;
+  background:conic-gradient(var(--hc) calc(var(--p)*1%),var(--cell) 0)}
+.cal button span{position:absolute;inset:3px;border-radius:50%;background:var(--solid);display:grid;place-items:center}
+.cal button.full span{background:var(--hc);color:#fff}
+.cal button.na{background:transparent;color:var(--muted);opacity:.45}
+.cal button.na span{background:transparent}
+.cal button.fl span{background:color-mix(in srgb,var(--danger) 20%,var(--solid));color:var(--danger)}
+.cal button.td span{box-shadow:inset 0 0 0 2px var(--accent)}
+.calhd{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px}
+.calhd b{font-size:16px}
+.calhd button{width:34px;height:34px;border-radius:50%;background:var(--cell);font-size:16px}
+.steps .stp{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);font-size:16px;width:100%;text-align:left}
+.steps .stp:last-child{border-bottom:0}
+.steps .bx{width:26px;height:26px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--mono);display:grid;place-items:center;flex:none;color:#fff;font-size:14px;font-weight:800}
+.steps .stp.on .bx{background:var(--hc);box-shadow:none}
+.steps .stp.on .nm{color:var(--muted);text-decoration:line-through}
+.step-ed{display:flex;gap:8px;margin:6px 0}
+.step-ed input{flex:1}
+.step-ed button{width:44px;border-radius:14px;background:var(--cell);color:var(--danger);font-weight:800}
+.hbar7{display:flex;gap:6px;align-items:flex-end;height:110px}
+.hbar7 .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
+.hbar7 .tr{flex:1;width:100%;border-radius:10px;background:var(--cell);position:relative;overflow:hidden}
+.hbar7 .tr i{position:absolute;left:0;right:0;bottom:0;border-radius:10px;background:linear-gradient(180deg,#30D158,#28b84c)}
+.hbar7 .lb{font-size:11px;color:var(--muted);font-weight:600}
+.hrate{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.hrate:last-child{border-bottom:0}
+.hrate .ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:17px;flex:none}
+.hrate .nm{flex:1;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrate .tr{width:70px;height:8px;border-radius:5px;background:var(--cell);overflow:hidden}
+.hrate .tr i{display:block;height:100%;border-radius:5px}
+.hrate .v{width:86px;white-space:nowrap;text-align:right;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="bgfx"></div>
+<header id="hdr">
+  <button class="ibtn glass" id="btnBack" aria-label="Kembali" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <div class="h-date" id="hDate">
+    <div class="h-title" id="hTitle">DailyJon</div>
+    <div class="h-sub" id="hSub"></div>
+    <input type="date" id="datePick" aria-label="Pilih tanggal">
+  </div>
+  <div class="h-view-title" id="hViewTitle" hidden></div>
+  <button class="pill" id="btnToday" hidden>Hari ini</button>
+  <button class="ibtn glass" id="btnPrev" aria-label="Hari sebelumnya"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button class="ibtn glass" id="btnNext" aria-label="Hari berikutnya"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></button>
+  <button class="ibtn glass" id="btnMenu" aria-label="Menu"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+  <button class="addbtn" id="btnAddHabit" aria-label="Tambah kebiasaan" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  <div class="ai-head" id="aiHead" hidden><span class="ai-badge" id="aiBadge">AI Lokal</span></div>
+</header>
+
+<main>
+  <section class="view" id="view-habits"></section>
+
+  <section class="view active" id="view-plan">
+    <div class="nowcard glass" id="nowCard"></div>
+    <div class="install glass" id="installTip" hidden></div>
+    <div class="hint" id="hint" hidden>💡 <b>Tekan lama</b> lalu <b>geser</b> di grid untuk menambah kegiatan. Ketuk kotak kosong untuk 10 menit, ketuk kegiatan untuk mengubah. Geser kiri/kanan untuk ganti hari.</div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="view" id="view-stats"></section>
+
+  <section class="view" id="view-ai">
+    <div class="chat" id="chatLog"></div>
+  </section>
+
+  <section class="view" id="view-focus"></section>
+  <section class="view" id="view-set"></section>
+</main>
+
+<div class="chatbar glass" id="chatbar" hidden>
+  <input id="chatIn" placeholder="Tanya Jon…" autocomplete="off" enterkeyhint="send">
+  <button id="chatSend" aria-label="Kirim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+</div>
+
+<nav class="tabs glass" id="tabs">
+  <button data-v="habits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16.5 9.5"/></svg>Kebiasaan</button>
+  <button data-v="plan" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Jadwal<span class="badge" id="focusBadge" hidden></span></button>
+  <button data-v="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>Jon AI</button>
+  <button data-v="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Statistik</button>
+  <button data-v="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Setelan</button>
+</nav>
+
+<div class="selinfo" id="selInfo" hidden></div>
+<div class="backdrop" id="backdrop"></div>
+<div class="sheet" id="sheet"><div class="grab"></div><div id="sheetBody"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+
+<script>
+'use strict';
+/* =========================================================
+   DailyJon — planner grid harian + asisten AI
+   Semua data tersimpan di perangkat (localStorage). Tanpa iklan, tanpa server.
+   ========================================================= */
+const APP_VER = '1.3.0';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (s, n) => { const d = parseYmd(s); d.setDate(d.getDate() + n); return ymd(d); };
+const diffDays = (a, b) => Math.round((parseYmd(a) - parseYmd(b)) / 864e5);
+const today = () => ymd(new Date());
+const nowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+const fmtMin = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+const fmtDur = m => { m = Math.round(m); if (m < 60) return `${m} mnt`; const h = Math.floor(m / 60), r = m % 60; return r ? `${h}j ${r}m` : `${h} jam`; };
+const HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const HARI_S = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const BULAN_FULL = ['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'];
+const fmtDate = s => { const d = parseYmd(s); return `${HARI[d.getDay()]}, ${d.getDate()} ${BULAN[d.getMonth()]}`; };
+function fmtDateRel(s) {
+  const n = diffDays(s, today());
+  const d = parseYmd(s), short = `${HARI_S[d.getDay()]}, ${d.getDate()} ${BULAN[d.getMonth()]}`;
+  if (n === 0) return `hari ini (${short})`;
+  if (n === 1) return `besok (${short})`;
+  if (n === 2) return `lusa (${short})`;
+  if (n === -1) return `kemarin (${short})`;
+  return fmtDate(s);
+}
+
+const DEFAULT_CATS = [
+  {id:'kerja', name:'Kerja', color:'#0A84FF'},
+  {id:'belajar', name:'Belajar', color:'#BF5AF2'},
+  {id:'olahraga', name:'Olahraga', color:'#30D158'},
+  {id:'ibadah', name:'Ibadah', color:'#00C7BE'},
+  {id:'istirahat', name:'Istirahat', color:'#FF9F0A'},
+  {id:'pribadi', name:'Pribadi', color:'#FF375F'},
+  {id:'lainnya', name:'Lainnya', color:'#8E8E93'}
+];
+const AI_MODELS = [
+  {id:'Qwen2.5-0.5B-Instruct-q4f16_1-MLC', name:'Ringan · Qwen 0.5B (±0,4 GB)'},
+  {id:'Llama-3.2-1B-Instruct-q4f16_1-MLC', name:'Seimbang · Llama 1B (±0,9 GB)'},
+  {id:'Qwen2.5-1.5B-Instruct-q4f16_1-MLC', name:'Pintar · Qwen 1.5B (±1,2 GB)'}
+];
+
+/* ---------------- State ---------------- */
+const KEY = 'dailyjon.v1';
+let S;
+function defaults() {
+  return {
+    v: 1, cats: DEFAULT_CATS.map(c => ({...c})), days: {}, chat: [], timer: null, notified: {}, lastCat: 'pribadi', habits: [], hlog: {}, htimer: null, synced: {},
+    settings: {theme:'auto', mono:false, remindBefore:5, remindDefault:true, dayStart:6, dayEnd:23,
+      aiModel: AI_MODELS[0].id, aiAuto:false, aiLoadedOnce:false, hideHint:false, hideInstall:false, startTab:'plan', scMode:'off', scAlarm:true, scName:'DailyJon Sinkron', scGuided:false, pushUrl:'', pushKey:'', pushOn:false, pushToken:'', pushHash:''}
+  };
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const d = JSON.parse(raw), def = defaults();
+      S = {...def, ...d, settings: {...def.settings, ...(d.settings || {})}};
+      if (!Array.isArray(S.cats) || !S.cats.length) S.cats = def.cats;
+      if (!S.days || typeof S.days !== 'object') S.days = {};
+      if (!Array.isArray(S.chat)) S.chat = [];
+      if (!Array.isArray(S.habits)) S.habits = [];
+      if (!S.hlog || typeof S.hlog !== 'object') S.hlog = {};
+      if (!S.notified) S.notified = {};
+      if (!S.synced || typeof S.synced !== 'object') S.synced = {};
+      return;
+    }
+  } catch (e) {}
+  S = defaults();
+}
+let saveT;
+function save() { clearTimeout(saveT); saveT = setTimeout(saveNow, 150); if (typeof pushScheduleSoon === 'function') pushScheduleSoon(); }
+function saveNow() {
+  clearTimeout(saveT);
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('Gagal menyimpan — memori penyimpanan penuh?'); }
+}
+load();
+let viewDate = today();
+let view = 'plan';
+
+/* ---------------- Data helpers ---------------- */
+const getDay = d => S.days[d] || [];
+function setDay(d, arr) { arr.sort((a, b) => a.start - b.start); if (arr.length) S.days[d] = arr; else delete S.days[d]; if (typeof markDaysDirty === 'function') markDaysDirty(); }
+function catOf(id) { return S.cats.find(c => c.id === id) || S.cats.find(c => c.id === 'lainnya') || S.cats[S.cats.length - 1]; }
+// Menaruh blok: bagian blok lama yang tertimpa akan dipotong/dipecah (seperti mewarnai grid)
+function placeBlock(date, blk, excludeId) {
+  const out = [];
+  for (const b of getDay(date)) {
+    if (b.id === excludeId) continue;
+    if (b.end <= blk.start || b.start >= blk.end) { out.push(b); continue; }
+    if (b.start < blk.start) out.push({...b, end: blk.start});
+    if (b.end > blk.end) out.push({...b, id: b.start < blk.start ? uid() : b.id, start: blk.end});
+  }
+  out.push(blk);
+  setDay(date, out);
+}
+const overlaps = (date, s, e, exId) => getDay(date).some(b => b.id !== exId && b.start < e && b.end > s);
+function freeSlots(date, minLen = 30) {
+  const ds = S.settings.dayStart * 60, de = S.settings.dayEnd * 60;
+  let t = ds; if (date === today()) t = Math.max(ds, Math.ceil(nowMin() / 10) * 10);
+  const out = [];
+  for (const b of getDay(date)) {
+    if (b.end <= t) continue;
+    if (b.start >= de) break;
+    if (b.start > t && Math.min(b.start, de) - t >= minLen) out.push([t, Math.min(b.start, de)]);
+    t = Math.max(t, b.end);
+  }
+  if (de - t >= minLen) out.push([t, de]);
+  return out;
+}
+function recentTitles() {
+  const m = new Map();
+  for (const [d, arr] of Object.entries(S.days)) for (const b of arr) {
+    const k = b.title.trim().toLowerCase(); if (!k) continue;
+    const o = m.get(k) || {title: b.title, cat: b.cat, n: 0, last: ''};
+    o.n++; if (d >= o.last) { o.last = d; o.cat = b.cat; o.title = b.title; }
+    m.set(k, o);
+  }
+  return [...m.values()].sort((a, b) => b.n - a.n || (b.last > a.last ? 1 : -1));
+}
+let undoSnap = null, undoKey = 0;
+function snap() { undoSnap = {days: JSON.stringify(S.days), habits: JSON.stringify(S.habits), hlog: JSON.stringify(S.hlog), key: ++undoKey}; return undoKey; }
+function undo(key) {
+  if (!undoSnap || (key && undoSnap.key !== key)) { toast('Tidak ada yang bisa diurungkan'); return; }
+  S.days = JSON.parse(undoSnap.days); S.habits = JSON.parse(undoSnap.habits); S.hlog = JSON.parse(undoSnap.hlog); undoSnap = null; save(); renderAll(); markDaysDirty(); toast('Diurungkan ↩︎');
+}
+
+/* ---------------- Theme ---------------- */
+const mq = matchMedia('(prefers-color-scheme: dark)');
+function applyTheme() {
+  const t = S.settings.theme === 'auto' ? (mq.matches ? 'dark' : 'light') : S.settings.theme;
+  document.documentElement.dataset.theme = t;
+  $('meta[name=theme-color]').content = t === 'dark' ? '#0d1020' : '#f5f6fb';
+  document.body.classList.toggle('mono', !!S.settings.mono);
+}
+mq.addEventListener?.('change', applyTheme);
+function textOn(hex) {
+  const h = hex.replace('#', ''); if (h.length < 6) return '#fff';
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.68 ? '#111827' : '#fff';
+}
+
+/* ---------------- Toast / sheet ---------------- */
+function toast(msg, {undoK = 0, ms = 2600, action = null} = {}) {
+  const t = $('#toast');
+  t.innerHTML = `<span>${esc(msg)}</span>${undoK ? '<button id="tUndo">Urungkan</button>' : ''}${action ? `<button id="tAct">${esc(action.label)}</button>` : ''}`;
+  t.classList.add('show');
+  if (undoK) $('#tUndo').onclick = () => { undo(undoK); t.classList.remove('show'); };
+  if (action) $('#tAct').onclick = () => { t.classList.remove('show'); action.fn(); };
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), undoK || action ? Math.max(ms, 5000) : ms);
+}
+function openSheet(html) {
+  $('#sheetBody').innerHTML = html; $('#sheet').scrollTop = 0;
+  $('#sheet').classList.add('open'); $('#backdrop').classList.add('open');
+}
+function closeSheet() { $('#sheet').classList.remove('open'); $('#backdrop').classList.remove('open'); document.activeElement?.blur?.(); }
+$('#backdrop').onclick = closeSheet;
+// tarik ke bawah untuk menutup sheet
+(() => { let y0 = null; const sh = $('#sheet');
+  sh.addEventListener('touchstart', e => { y0 = sh.scrollTop <= 0 ? e.touches[0].clientY : null; }, {passive: true});
+  sh.addEventListener('touchend', e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 90) closeSheet(); y0 = null; }, {passive: true});
+})();
+
+/* ---------------- Feedback (suara/getar) ---------------- */
+let actx = null;
+function unlockAudio() { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {} }
+document.addEventListener('touchend', unlockAudio, {once: true});
+document.addEventListener('click', unlockAudio, {once: true});
+function beep(times = 2) {
+  try { unlockAudio(); if (!actx) return;
+    for (let i = 0; i < times; i++) { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'sine'; o.frequency.value = 880;
+      const t0 = actx.currentTime + i * 0.28; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+      o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + 0.25); }
+  } catch (e) {}
+}
+const haptic = () => { try { navigator.vibrate?.(12); } catch (e) {} };
+async function notify(title, body) {
+  toast(`🔔 ${title}${body ? ' — ' + body : ''}`, {ms: 6000}); beep(3);
+  try {
+    if (typeof pushOn === 'function' && pushOn()) return; // notifikasi sistem dikirim server push → hindari dobel
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const reg = await navigator.serviceWorker?.getRegistration?.();
+      if (reg) reg.showNotification(title, {body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: title});
+      else new Notification(title, {body});
+    }
+  } catch (e) {}
+}
+
+/* =========================================================
+   VIEW: JADWAL (grid)
+   ========================================================= */
+let rowsEl = [], cellsEl = [];
+function buildGrid() {
+  let h = '<div class="colhdr"><div></div><div class="cols">' + [0,10,20,30,40,50].map(x => `<span>:${pad(x)}</span>`).join('') + '</div></div>';
+  for (let i = 0; i < 24; i++) {
+    h += `<div class="row" data-h="${i}"><div class="hl">${pad(i)}</div><div class="cells">`;
+    for (let c = 0; c < 6; c++) h += `<div class="c" style="grid-column:${c + 1}"></div>`;
+    h += '</div></div>';
+  }
+  $('#grid').innerHTML = h;
+  rowsEl = $$('.row', $('#grid')); cellsEl = rowsEl.map(r => $('.cells', r));
+}
+function renderBlocks() {
+  $$('#grid .seg').forEach(e => e.remove());
+  const isT = viewDate === today(), m = nowMin(), isPast = viewDate < today();
+  for (const b of getDay(viewDate)) {
+    const c = catOf(b.cat); let first = true;
+    for (let h = Math.floor(b.start / 60); h <= Math.floor((b.end - 1) / 60); h++) {
+      const s = Math.max(b.start, h * 60), e = Math.min(b.end, h * 60 + 60);
+      const c1 = (s - h * 60) / 10, c2 = (e - h * 60) / 10, w = c2 - c1;
+      const d = document.createElement('div');
+      d.className = 'seg' + (first ? '' : ' cont') + ((isPast || (isT && b.end <= m)) ? ' past' : '');
+      d.dataset.id = b.id;
+      d.style.gridColumn = `${c1 + 1} / ${c2 + 1}`;
+      d.style.background = c.color; d.style.color = textOn(c.color);
+      if (first) d.innerHTML = `<span class="t">${esc(b.title)}</span>${w >= 3 ? `<small>${fmtMin(b.start)}–${fmtMin(b.end)}</small>` : ''}`;
+      else if (w >= 2) d.innerHTML = `<span class="t">${esc(b.title)}</span>`;
+      cellsEl[h].appendChild(d); first = false;
+    }
+  }
+  // jam di luar jam aktif dibuat lebih redup
+  rowsEl.forEach((r, i) => r.classList.toggle('off', i < S.settings.dayStart || i >= S.settings.dayEnd));
+  renderNowLine();
+}
+function renderNowLine() {
+  $$('#grid .nowline').forEach(e => e.remove());
+  rowsEl.forEach(r => r.classList.remove('now'));
+  if (viewDate !== today()) return;
+  const d = new Date(), h = d.getHours(), pct = (d.getMinutes() + d.getSeconds() / 60) / 60 * 100;
+  const ln = document.createElement('div'); ln.className = 'nowline'; ln.style.left = pct + '%';
+  cellsEl[h].appendChild(ln); rowsEl[h].classList.add('now');
+}
+function renderNow() {
+  const el = $('#nowCard'), blocks = getDay(viewDate);
+  if (viewDate === today()) {
+    const m = nowMin(), cur = blocks.find(b => b.start <= m && m < b.end), nxt = blocks.find(b => b.start > m);
+    let h = '';
+    if (cur) {
+      const c = catOf(cur.cat), p = (m - cur.start) / (cur.end - cur.start) * 100;
+      h += `<div class="nc-row"><span class="dot" style="background:${c.color}"></span><div class="nc-main"><div class="nc-label">Sekarang · ${fmtMin(cur.start)}–${fmtMin(cur.end)}</div><div class="nc-title">${esc(cur.title)}</div><div class="bar"><i style="width:${p}%;background:${c.color}"></i></div></div><div class="nc-right"><b>${fmtDur(cur.end - m)}</b><small>tersisa</small></div></div>`;
+    } else {
+      h += `<div class="nc-row"><span class="dot idle"></span><div class="nc-main"><div class="nc-label">Sekarang · ${fmtMin(m)}</div><div class="nc-title muted">Waktu luang</div></div></div>`;
+    }
+    if (nxt) h += `<div class="nc-next">Berikutnya: <b>${esc(nxt.title)}</b> · ${fmtMin(nxt.start)} (${fmtDur(nxt.start - m)} lagi)</div>`;
+    else if (blocks.length) h += `<div class="nc-next">Tidak ada kegiatan lagi hari ini 🎉</div>`;
+    if (S.timer) h += `<div class="nc-next" id="ncFocus" style="color:var(--accent);font-weight:700">⏱️ Fokus berjalan: ${esc(S.timer.label)} — ketuk untuk melihat</div>`;
+    el.innerHTML = h;
+    if ($('#ncFocus')) $('#ncFocus').onclick = () => show('focus');
+  } else {
+    const tot = blocks.reduce((a, b) => a + b.end - b.start, 0);
+    el.innerHTML = `<div class="nc-next">${blocks.length ? `<b>${blocks.length} kegiatan</b> · ${fmtDur(tot)} terjadwal` : 'Belum ada jadwal di hari ini.'}</div>`;
+  }
+  $('#hint').hidden = !!S.settings.hideHint && Object.keys(S.days).length > 0;
+  if (Object.keys(S.days).length > 2 && !S.settings.hideHint) { S.settings.hideHint = true; save(); }
+}
+function renderHeader() {
+  const plan = view === 'plan';
+  $('#hDate').hidden = !plan; $('#btnPrev').hidden = !plan; $('#btnNext').hidden = !plan; $('#btnMenu').hidden = !plan;
+  $('#hViewTitle').hidden = plan; $('#aiHead').hidden = view !== 'ai'; $('#btnAddHabit').hidden = view !== 'habits'; $('#btnBack').hidden = view !== 'focus';
+  $('#btnToday').hidden = !(plan && viewDate !== today()) && !(view === 'habits' && hDate !== today());
+  if (plan) {
+    $('#hTitle').innerHTML = `${esc(fmtDate(viewDate))}<span class="chev">▾</span>`;
+    const n = diffDays(viewDate, today());
+    $('#hSub').textContent = n === 0 ? 'Hari ini' : n === 1 ? 'Besok' : n === -1 ? 'Kemarin' : n > 0 ? `${n} hari lagi` : `${-n} hari lalu`;
+    $('#datePick').value = viewDate;
+  } else {
+    $('#hViewTitle').textContent = {habits: 'Kebiasaan', stats: 'Statistik', ai: 'Jon AI', focus: 'Fokus', set: 'Setelan'}[view];
+  }
+}
+function setDate(d, scrollNow) {
+  viewDate = d; renderHeader(); renderNow(); renderBlocks();
+  if (view === 'stats') renderStats();
+  if (scrollNow) scrollToHour();
+}
+function scrollToHour(h) {
+  if (h == null) h = viewDate === today() ? Math.max(0, new Date().getHours() - 1) : S.settings.dayStart;
+  const r = rowsEl[h]; if (!r) return;
+  const y = r.getBoundingClientRect().top + scrollY - (document.querySelector('header').offsetHeight + 30);
+  scrollTo(0, Math.max(0, y));
+}
+$('#btnPrev').onclick = () => setDate(addDays(viewDate, -1));
+$('#btnNext').onclick = () => setDate(addDays(viewDate, 1));
+$('#btnToday').onclick = () => { if (view === 'habits') { hDate = today(); renderHabits(); renderHeader(); } else setDate(today(), true); };
+$('#btnBack').onclick = () => show('plan');
+$('#datePick').onchange = e => { if (e.target.value) setDate(e.target.value, true); };
+
+/* ---- interaksi grid: tekan-lama + geser, ketuk ---- */
+let sel = null, lpT = null, startPt = null, lastPt = null, lastTouch = 0, justSel = 0, scrollRAF = null, mouseDown = false;
+function idxFromPoint(x, y) {
+  const el = document.elementFromPoint(x, y); const row = el?.closest?.('.row'); if (!row) return null;
+  const h = +row.dataset.h, r = cellsEl[h].getBoundingClientRect();
+  return h * 6 + clamp(Math.floor((x - r.left) / r.width * 6), 0, 5);
+}
+function renderSel() {
+  $$('#grid .selseg').forEach(e => e.remove());
+  const info = $('#selInfo');
+  if (!sel) { info.hidden = true; return; }
+  const s = Math.min(sel.a, sel.b), e = Math.max(sel.a, sel.b) + 1;
+  for (let h = Math.floor(s / 6); h <= Math.floor((e - 1) / 6); h++) {
+    const c1 = Math.max(s, h * 6) - h * 6, c2 = Math.min(e, h * 6 + 6) - h * 6;
+    const d = document.createElement('div'); d.className = 'selseg'; d.style.gridColumn = `${c1 + 1} / ${c2 + 1}`; cellsEl[h].appendChild(d);
+  }
+  info.hidden = false; info.textContent = `${fmtMin(s * 10)} – ${fmtMin(e * 10)} · ${fmtDur((e - s) * 10)}`;
+}
+function beginSel(i) { sel = {a: i, b: i}; renderSel(); haptic(); }
+function updateSel(i) { if (sel && i != null && i !== sel.b) { sel.b = i; renderSel(); } }
+function endSel() {
+  if (!sel) return;
+  const s = Math.min(sel.a, sel.b), e = Math.max(sel.a, sel.b) + 1;
+  sel = null; renderSel(); stopAutoScroll(); justSel = Date.now();
+  openBlockSheet({date: viewDate, start: s * 10, end: e * 10});
+}
+function autoScrollLoop() {
+  if (!sel || !lastPt) { scrollRAF = null; return; }
+  const top = document.querySelector('header').offsetHeight + 30, bot = innerHeight - ($('#tabs').offsetHeight + 40);
+  let dy = 0; if (lastPt.y < top) dy = -Math.min(18, (top - lastPt.y) / 3 + 4); else if (lastPt.y > bot) dy = Math.min(18, (lastPt.y - bot) / 3 + 4);
+  if (dy) { scrollBy(0, dy); updateSel(idxFromPoint(lastPt.x, clamp(lastPt.y, top, bot))); }
+  scrollRAF = requestAnimationFrame(autoScrollLoop);
+}
+function stopAutoScroll() { if (scrollRAF) cancelAnimationFrame(scrollRAF); scrollRAF = null; }
+const grid = $('#grid');
+grid.addEventListener('touchstart', e => {
+  lastTouch = Date.now();
+  if (e.touches.length > 1) { clearTimeout(lpT); return; }
+  const t = e.touches[0]; startPt = {x: t.clientX, y: t.clientY, t: Date.now()}; lastPt = {...startPt};
+  const i = idxFromPoint(t.clientX, t.clientY); if (i == null) return;
+  clearTimeout(lpT); lpT = setTimeout(() => { lpT = null; beginSel(i); if (!scrollRAF) scrollRAF = requestAnimationFrame(autoScrollLoop); }, 280);
+}, {passive: true});
+grid.addEventListener('touchmove', e => {
+  const t = e.touches[0]; lastPt = {x: t.clientX, y: t.clientY};
+  if (sel) { e.preventDefault(); updateSel(idxFromPoint(t.clientX, t.clientY)); }
+  else if (lpT && (Math.abs(t.clientX - startPt.x) > 8 || Math.abs(t.clientY - startPt.y) > 8)) { clearTimeout(lpT); lpT = null; }
+}, {passive: false});
+grid.addEventListener('touchend', e => {
+  lastTouch = Date.now(); clearTimeout(lpT); lpT = null;
+  if (sel) { e.preventDefault(); endSel(); return; }
+  // geser horizontal untuk ganti hari
+  const t = e.changedTouches[0];
+  if (startPt) { const dx = t.clientX - startPt.x, dy = t.clientY - startPt.y;
+    if (Math.abs(dx) > 70 && Math.abs(dy) < 45 && Date.now() - startPt.t < 600) { justSel = Date.now(); setDate(addDays(viewDate, dx < 0 ? 1 : -1)); } }
+}, {passive: false});
+grid.addEventListener('touchcancel', () => { clearTimeout(lpT); lpT = null; if (sel) { sel = null; renderSel(); stopAutoScroll(); } });
+// mouse (desktop)
+grid.addEventListener('mousedown', e => {
+  if (Date.now() - lastTouch < 900 || e.button !== 0) return;
+  const i = idxFromPoint(e.clientX, e.clientY); if (i == null) return;
+  if (e.target.closest('.seg')) return; // klik pada kegiatan = edit
+  mouseDown = true; startPt = {x: e.clientX, y: e.clientY}; beginSel(i); e.preventDefault();
+});
+addEventListener('mousemove', e => { if (mouseDown && sel) { lastPt = {x: e.clientX, y: e.clientY}; updateSel(idxFromPoint(e.clientX, e.clientY)); if (!scrollRAF) scrollRAF = requestAnimationFrame(autoScrollLoop); } });
+addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false; endSel(); } });
+grid.addEventListener('click', e => {
+  if (Date.now() - justSel < 500) return;
+  const seg = e.target.closest('.seg');
+  if (seg) { openBlockSheet({date: viewDate, id: seg.dataset.id}); return; }
+  const i = idxFromPoint(e.clientX, e.clientY); if (i == null) return;
+  openBlockSheet({date: viewDate, start: i * 10, end: i * 10 + 10});
+});
+
+/* ---- sheet tambah / ubah kegiatan ---- */
+function timeOpts(sel, from, to) { let h = ''; for (let m = from; m <= to; m += 10) h += `<option value="${m}"${m === sel ? ' selected' : ''}>${fmtMin(m)}</option>`; return h; }
+function openBlockSheet({date, start, end, id}) {
+  const ex = id ? getDay(date).find(b => b.id === id) : null;
+  if (id && !ex) return;
+  const f = ex ? {...ex} : {start, end, title: '', cat: S.lastCat || 'pribadi', note: '', remind: !!S.settings.remindDefault};
+  const recents = recentTitles().slice(0, 10);
+  openSheet(`
+    <div class="sh-head"><b>${ex ? 'Ubah kegiatan' : 'Kegiatan baru'}</b><span>${esc(fmtDate(date))}</span></div>
+    <input class="fld" id="fTitle" placeholder="Nama kegiatan" value="${esc(f.title)}" maxlength="60" enterkeyhint="done">
+    ${recents.length ? `<div class="sec-lbl">Pilih cepat</div><div class="chips" id="fRecent">${recents.map((r, i) => `<button class="chip" data-i="${i}"><span class="d" style="background:${catOf(r.cat).color}"></span>${esc(r.title)}</button>`).join('')}</div>` : ''}
+    <div class="trow">
+      <label>Mulai<select id="fStart">${timeOpts(f.start, 0, 1430)}</select></label><span class="arrow">→</span>
+      <label>Selesai<select id="fEnd">${timeOpts(f.end, 10, 1440)}</select></label>
+      <span class="dur" id="fDur"></span>
+    </div>
+    <div class="sec-lbl">Kategori</div>
+    <div class="chips" id="fCats">${S.cats.map(c => `<button class="chip${c.id === f.cat ? ' on' : ''}" data-c="${c.id}"><span class="d" style="background:${c.color}"></span>${esc(c.name)}</button>`).join('')}</div>
+    <div class="set-row" style="margin-top:8px"><div class="lbl">Pengingat<small>Diberi tahu ${S.settings.remindBefore ? S.settings.remindBefore + ' menit sebelum' : 'saat'} mulai</small></div><label class="tg"><input type="checkbox" id="fRem"${f.remind ? ' checked' : ''}><span></span></label></div>
+    ${S.settings.scMode !== 'off' ? `<div class="set-row"><div class="lbl">Kalender & alarm iPhone<small>${S.settings.scAlarm ? 'Masuk Kalender + alarm Jam' : 'Masuk Kalender'}${S.settings.scMode === 'auto' ? ' otomatis' : ' (kirim lewat 📲)'}</small></div><label class="tg"><input type="checkbox" id="fAlarm"${f.alarm !== false ? ' checked' : ''}><span></span></label></div>` : ''}
+    <textarea class="fld" id="fNote" placeholder="Catatan (opsional)">${esc(f.note || '')}</textarea>
+    <div class="btn-row">${ex ? '<button class="btn dan" id="fDel">Hapus</button><button class="btn" id="fDup">Salin ke besok</button><button class="btn" id="fIcs" aria-label="Tambah ke Kalender">📅</button>' : '<button class="btn" id="fCancel">Batal</button>'}<button class="btn pri" id="fSave">Simpan</button></div>
+  `);
+  const updDur = () => { const s = +$('#fStart').value, e = +$('#fEnd').value; $('#fDur').textContent = e > s ? fmtDur(e - s) : '⚠︎'; };
+  updDur();
+  $('#fStart').onchange = () => { const s = +$('#fStart').value, e = +$('#fEnd').value; if (e <= s) $('#fEnd').value = Math.min(1440, s + Math.max(10, f.end - f.start)); updDur(); };
+  $('#fEnd').onchange = updDur;
+  $$('#fCats .chip').forEach(b => b.onclick = () => { $$('#fCats .chip').forEach(x => x.classList.remove('on')); b.classList.add('on'); f.cat = b.dataset.c; });
+  $$('#fRecent .chip').forEach(b => b.onclick = () => {
+    const r = recents[+b.dataset.i]; $('#fTitle').value = r.title; f.cat = r.cat;
+    $$('#fCats .chip').forEach(x => x.classList.toggle('on', x.dataset.c === r.cat));
+  });
+  $('#fTitle').addEventListener('input', () => { // tebak kategori dari nama
+    const g = guessCat($('#fTitle').value, true); if (g && !ex) { f.cat = g; $$('#fCats .chip').forEach(x => x.classList.toggle('on', x.dataset.c === g)); }
+  });
+  $('#fTitle').addEventListener('keydown', e => { if (e.key === 'Enter') $('#fTitle').blur(); });
+  if ($('#fCancel')) $('#fCancel').onclick = closeSheet;
+  $('#fSave').onclick = () => {
+    const s = +$('#fStart').value, e = +$('#fEnd').value;
+    if (e <= s) { toast('Jam selesai harus setelah jam mulai'); return; }
+    const title = $('#fTitle').value.trim() || catOf(f.cat).name;
+    const k = snap();
+    const blk = {id: ex ? ex.id : uid(), start: s, end: e, title, cat: f.cat, note: $('#fNote').value.trim(), remind: $('#fRem').checked};
+    if ($('#fAlarm')) blk.alarm = $('#fAlarm').checked; else if (ex && ex.alarm === false) blk.alarm = false;
+    placeBlock(date, blk, ex?.id); S.lastCat = f.cat; save(); closeSheet(); renderAll();
+    toast(ex ? 'Perubahan disimpan' : `Ditambahkan: ${title}`, S.settings.scMode === 'manual' ? {action: {label: '📲 Kirim', fn: () => syncNow(false)}} : {undoK: k});
+  };
+  if (ex) {
+    $('#fDel').onclick = () => { const k = snap(); setDay(date, getDay(date).filter(b => b.id !== ex.id)); save(); closeSheet(); renderAll(); toast('Kegiatan dihapus', {undoK: k}); };
+    $('#fIcs').onclick = () => { closeSheet(); exportBlockICS(date, ex); };
+    $('#fDup').onclick = () => { const k = snap(); const d2 = addDays(date, 1); placeBlock(d2, {...ex, id: uid(), start: +$('#fStart').value, end: +$('#fEnd').value}); save(); closeSheet(); renderAll(); toast(`Disalin ke ${fmtDate(d2)}`, {undoK: k}); };
+  } else if (!recents.length) setTimeout(() => $('#fTitle')?.focus(), 280);
+}
+
+/* ---- menu hari ---- */
+$('#btnMenu').onclick = () => {
+  openSheet(`
+    <div class="sh-head"><b>${esc(fmtDate(viewDate))}</b></div>
+    <button class="menu-item" data-a="fromY">📋 Salin jadwal dari hari sebelumnya</button>
+    <button class="menu-item" data-a="toT">➡️ Salin jadwal ini ke besok</button>
+    <button class="menu-item" data-a="to7">🗓️ Salin jadwal ini ke 6 hari berikutnya</button>
+    <button class="menu-item" data-a="toWk">💼 Salin ke hari kerja lain minggu ini (Sen–Jum)</button>
+    <button class="menu-item" data-a="cal">📲 Kalender & Alarm iPhone${(() => { const n = pendingSyncCount(); return n ? ` <span class="chip" style="padding:3px 8px;font-size:12px;background:var(--accent);color:#fff">${n}</span>` : ''; })()}</button>
+    <button class="menu-item" data-a="focus">⏱️ Mode fokus (timer)</button>
+    <button class="menu-item" data-a="ai">✨ Minta Jon menyusun jadwal hari ini</button>
+    <button class="menu-item dan" data-a="clr">🗑️ Kosongkan hari ini</button>`);
+  $$('#sheetBody .menu-item').forEach(b => b.onclick = () => {
+    const a = b.dataset.a; closeSheet();
+    if (a === 'focus') { show('focus'); return; }
+    if (a === 'cal') { setTimeout(openCalSheet, 300); return; }
+    if (a === 'ai') { show('ai'); sendChat(`susun rutinitas produktif ${viewDate === today() ? 'hari ini' : viewDate.split('-').reverse().join('/')}`); return; }
+    const src = getDay(viewDate);
+    let targets = [];
+    if (a === 'fromY') { const y = getDay(addDays(viewDate, -1)); if (!y.length) return toast('Hari sebelumnya kosong'); const k = snap(); y.forEach(b2 => placeBlock(viewDate, {...b2, id: uid()})); save(); renderAll(); return toast('Jadwal disalin', {undoK: k}); }
+    if (a === 'clr') { if (!src.length) return toast('Sudah kosong'); const k = snap(); setDay(viewDate, []); save(); renderAll(); return toast('Hari dikosongkan', {undoK: k}); }
+    if (!src.length) return toast('Jadwal hari ini masih kosong');
+    if (a === 'toT') targets = [addDays(viewDate, 1)];
+    if (a === 'to7') targets = [1,2,3,4,5,6].map(n => addDays(viewDate, n));
+    if (a === 'toWk') { const dow = parseYmd(viewDate).getDay(), mon = addDays(viewDate, -((dow + 6) % 7)); targets = [0,1,2,3,4].map(n => addDays(mon, n)).filter(d => d !== viewDate); }
+    const k = snap(); targets.forEach(t => src.forEach(b2 => placeBlock(t, {...b2, id: uid()}))); save(); renderAll();
+    toast(`Disalin ke ${targets.length} hari`, {undoK: k});
+  });
+};
+
+/* =========================================================
+   VIEW: STATISTIK
+   ========================================================= */
+let statRange = 'day';
+const weekStart = d => addDays(d, -((parseYmd(d).getDay() + 6) % 7));
+function sumByCat(dates) {
+  const m = {}; let tot = 0;
+  for (const d of dates) for (const b of getDay(d)) { m[b.cat] = (m[b.cat] || 0) + b.end - b.start; tot += b.end - b.start; }
+  return {m, tot};
+}
+function renderStats() {
+  const el = $('#view-stats');
+  const dates = statRange === 'day' ? [viewDate] : Array.from({length: 7}, (_, i) => addDays(weekStart(viewDate), i));
+  const {m, tot} = sumByCat(dates);
+  const prevDates = dates.map(d => addDays(d, -dates.length));
+  const prev = sumByCat(prevDates).tot;
+  const cats = Object.entries(m).sort((a, b) => b[1] - a[1]);
+  const max = cats.length ? cats[0][1] : 1;
+  const activeMin = (S.settings.dayEnd - S.settings.dayStart) * 60 * dates.length;
+  const titles = {}; dates.forEach(d => getDay(d).forEach(b => { titles[b.title] = (titles[b.title] || 0) + b.end - b.start; }));
+  const topT = Object.entries(titles).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const label = statRange === 'day' ? fmtDate(viewDate) : `${fmtDate(dates[0]).split(', ')[1]} – ${fmtDate(dates[6]).split(', ')[1]}`;
+  let h = `<div class="seg-ctl"><button data-r="day" class="${statRange === 'day' ? 'on' : ''}">Hari</button><button data-r="week" class="${statRange === 'week' ? 'on' : ''}">Minggu</button></div>
+  <div class="card glass"><h3>${esc(label)}</h3><div class="kpis">
+    <div class="kpi"><b>${fmtDur(tot)}</b><span>terjadwal</span></div>
+    <div class="kpi"><b>${Math.round(tot / Math.max(1, activeMin) * 100)}%</b><span>jam aktif terisi</span></div>
+    <div class="kpi"><b>${prev ? (tot >= prev ? '▲' : '▼') + Math.abs(Math.round((tot - prev) / prev * 100)) + '%' : '–'}</b><span>vs ${statRange === 'day' ? 'kemarin' : 'minggu lalu'}</span></div>
+  </div></div>`;
+  h += `<div class="card glass"><h3>Per kategori</h3>${cats.length ? cats.map(([id, v]) => { const c = catOf(id); return `<div class="catbar"><span class="nm">${esc(c.name)}</span><span class="tr"><i style="width:${v / max * 100}%;background:${c.color}"></i></span><span class="v">${fmtDur(v)} · ${Math.round(v / tot * 100)}%</span></div>`; }).join('') : '<div class="small">Belum ada data. Tambahkan kegiatan di tab Jadwal.</div>'}</div>`;
+  if (statRange === 'week') {
+    const dayTot = dates.map(d => getDay(d).reduce((a, b) => a + b.end - b.start, 0)), mx = Math.max(60, ...dayTot);
+    h += `<div class="card glass"><h3>Per hari</h3><div class="week">${dates.map((d, i) => {
+      const byC = {}; getDay(d).forEach(b => byC[b.cat] = (byC[b.cat] || 0) + b.end - b.start);
+      return `<div class="col${d === viewDate ? ' sel' : ''}" data-d="${d}"><div class="stack">${Object.entries(byC).map(([c, v]) => `<i style="height:${v / mx * 100}%;background:${catOf(c).color}"></i>`).join('')}</div><span class="lb">${HARI_S[parseYmd(d).getDay()]}</span></div>`; }).join('')}</div></div>`;
+  }
+  if (topT.length) h += `<div class="card glass"><h3>Kegiatan terbanyak</h3>${topT.map(([t, v]) => `<div class="list-item"><span>${esc(t)}</span><b>${fmtDur(v)}</b></div>`).join('')}</div>`;
+  if (statRange === 'day') {
+    const fs = freeSlots(viewDate, 30);
+    h += `<div class="card glass"><h3>Waktu luang (${pad(S.settings.dayStart)}:00–${pad(S.settings.dayEnd)}:00)</h3>${fs.length ? fs.map(([a, b]) => `<div class="list-item"><span>${fmtMin(a)} – ${fmtMin(b)}</span><b>${fmtDur(b - a)}</b></div>`).join('') : '<div class="small">Tidak ada waktu luang ≥ 30 menit.</div>'}</div>`;
+  }
+  h += habitStatsHtml();
+  el.innerHTML = h;
+  $$('.seg-ctl button', el).forEach(b => b.onclick = () => { statRange = b.dataset.r; renderStats(); });
+  $$('.week .col', el).forEach(c => c.onclick = () => { viewDate = c.dataset.d; renderStats(); });
+}
+
+/* =========================================================
+   VIEW: FOKUS (timer)
+   ========================================================= */
+function timerRemain() { const t = S.timer; if (!t) return 0; return t.paused != null ? t.paused : t.endAt - Date.now(); }
+function startTimer(min, label) { S.timer = {endAt: Date.now() + min * 60000, total: min * 60000, label, paused: null}; save(); renderFocus(); unlockAudio(); }
+function renderFocus() {
+  $('#focusBadge').hidden = !S.timer;
+  if (view !== 'focus') return;
+  const el = $('#view-focus'), t = S.timer;
+  const m = nowMin(), cur = getDay(today()).find(b => b.start <= m && m < b.end);
+  const R = 110, C = 2 * Math.PI * R;
+  const rem = Math.max(0, timerRemain()), frac = t ? rem / t.total : 1;
+  const mm = Math.floor(rem / 60000), ss = Math.floor(rem % 60000 / 1000);
+  const big = t ? (mm >= 60 ? `${Math.floor(mm / 60)}:${pad(mm % 60)}:${pad(ss)}` : `${pad(mm)}:${pad(ss)}`) : '00:00';
+  el.innerHTML = `
+    <div class="ring-wrap"><svg viewBox="0 0 250 250"><circle cx="125" cy="125" r="${R}" fill="none" stroke="var(--cell)" stroke-width="14"/>
+      <circle id="ringArc" cx="125" cy="125" r="${R}" fill="none" stroke="url(#gr)" stroke-width="14" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}"/>
+      <defs><linearGradient id="gr"><stop offset="0" stop-color="#4F7CFF"/><stop offset="1" stop-color="#7C5CFF"/></linearGradient></defs></svg>
+      <div class="ring-txt"><b id="ringTime">${big}</b><span>${t ? esc(t.label) + (t.paused != null ? ' · dijeda' : '') : 'Pilih durasi fokus'}</span></div></div>
+    ${t ? `<div class="card glass"><div class="btn-row" style="margin:0"><button class="btn" id="tStop">Hentikan</button><button class="btn pri" id="tPause">${t.paused != null ? 'Lanjutkan' : 'Jeda'}</button></div><div class="btn-row"><button class="btn" id="tAdd">+5 menit</button></div></div>` : `
+    <div class="card glass"><h3>Mulai fokus</h3><div class="chips">
+      ${cur ? `<button class="chip on" data-m="${cur.end - m}" data-l="${esc(cur.title)}">▶︎ ${esc(cur.title)} (${fmtDur(cur.end - m)})</button>` : ''}
+      ${[10, 25, 45, 60, 90].map(x => `<button class="chip" data-m="${x}" data-l="Fokus ${x} menit">${x} menit</button>`).join('')}
+    </div>
+    <div class="trow"><label>Durasi lain (menit)<input class="fld" id="tCustom" type="number" inputmode="numeric" min="1" max="600" placeholder="mis. 30" style="margin-top:4px"></label><button class="btn pri" id="tGo" style="flex:none">Mulai</button></div>
+    <div class="small">Timer tetap berjalan walau aplikasi ditutup; bunyi & notifikasi muncul saat aplikasi dibuka/aktif.</div></div>`}
+  `;
+  if (t) {
+    $('#tStop').onclick = () => { S.timer = null; save(); renderFocus(); };
+    $('#tPause').onclick = () => { if (t.paused != null) { t.endAt = Date.now() + t.paused; t.paused = null; } else t.paused = Math.max(0, t.endAt - Date.now()); save(); renderFocus(); };
+    $('#tAdd').onclick = () => { if (t.paused != null) t.paused += 300000; else t.endAt += 300000; t.total += 300000; save(); renderFocus(); };
+  } else {
+    $$('#view-focus .chip').forEach(b => b.onclick = () => startTimer(+b.dataset.m, b.dataset.l));
+    $('#tGo').onclick = () => { const v = +$('#tCustom').value; if (v > 0) startTimer(Math.min(600, v), `Fokus ${v} menit`); else toast('Isi durasi dulu'); };
+  }
+}
+function tickTimer() {
+  const t = S.timer; if (!t) return;
+  const rem = timerRemain();
+  if (t.paused == null && rem <= 0) { const lb = t.label; S.timer = null; save(); notify('Waktu fokus selesai ✅', lb); renderFocus(); return; }
+  if (view === 'focus' && $('#ringTime')) {
+    const r = Math.max(0, rem), mm = Math.floor(r / 60000), ss = Math.floor(r % 60000 / 1000);
+    $('#ringTime').textContent = mm >= 60 ? `${Math.floor(mm / 60)}:${pad(mm % 60)}:${pad(ss)}` : `${pad(mm)}:${pad(ss)}`;
+    const C = 2 * Math.PI * 110; $('#ringArc').setAttribute('stroke-dashoffset', C * (1 - r / t.total));
+  }
+}
+
+/* ---------------- Pengingat ---------------- */
+function checkReminders() {
+  const d = today(), m = nowMin(), before = +S.settings.remindBefore || 0;
+  for (const b of getDay(d)) {
+    if (!b.remind) continue;
+    const k = `${d}|${b.id}|${b.start}`;
+    if (S.notified[k]) continue;
+    if (m >= b.start - before && m < b.start + 5) {
+      S.notified[k] = 1; save();
+      notify(b.start - m > 0 ? `${b.title} mulai ${b.start - m} menit lagi` : `Saatnya: ${b.title}`, `${fmtMin(b.start)}–${fmtMin(b.end)}`);
+    }
+  }
+  // bersihkan catatan lama
+  for (const k of Object.keys(S.notified)) if (k.slice(0, 10) < addDays(d, -2)) delete S.notified[k];
+}
+
+/* =========================================================
+   VIEW: KEBIASAAN (habit tracker ala Grit)
+   ========================================================= */
+const HCOLORS = ['#FF453A','#FF9F0A','#FFD60A','#30D158','#00C7BE','#40C8E0','#0A84FF','#5E5CE6','#BF5AF2','#FF375F','#AC8E68','#8E8E93'];
+const HEMOJI = ['💧','💪','🏃','📖','🧘','🕌','📿','😴','🥗','🍎','🚭','📵','✍️','🎓','💻','🧹','💊','🚶','🚴','🏊','🎸','🌅','☀️','🌙','🦷','💰','📝','🗣️','❤️','⭐','🔥','🎯'];
+const HTEMPLATES = [
+  {name:'Minum air', icon:'💧', color:'#40C8E0', type:'count', goal:8, unit:'gelas', group:'Kesehatan'},
+  {name:'Olahraga', icon:'💪', color:'#30D158', type:'timer', goal:30, group:'Kesehatan'},
+  {name:'Baca buku', icon:'📖', color:'#FF9F0A', type:'timer', goal:20, group:'Malam'},
+  {name:'Sholat 5 waktu', icon:'🕌', color:'#00C7BE', type:'list', steps:['Subuh','Dzuhur','Ashar','Maghrib','Isya'], group:'Ibadah'},
+  {name:'Rutinitas pagi', icon:'🌅', color:'#FFD60A', type:'list', steps:['Bangun tanpa snooze','Minum segelas air','Rapikan kasur','Peregangan 5 menit'], group:'Pagi'},
+  {name:'Batasi media sosial', icon:'📵', color:'#FF375F', type:'timer', goal:60, limit:true, group:'Fokus'},
+  {name:'Meditasi', icon:'🧘', color:'#BF5AF2', type:'timer', goal:10, group:'Pagi'},
+  {name:'Tidur sebelum 23:00', icon:'😴', color:'#5E5CE6', type:'check', group:'Malam'},
+  {name:'Jalan kaki', icon:'🚶', color:'#30D158', type:'count', goal:8000, unit:'langkah', group:'Kesehatan'},
+  {name:'Belajar', icon:'🎓', color:'#0A84FF', type:'timer', goal:60, group:'Belajar'},
+  {name:'Tanpa rokok', icon:'🚭', color:'#FF453A', type:'check', group:'Kesehatan'},
+  {name:'Menabung', icon:'💰', color:'#AC8E68', type:'check', group:'Keuangan'}
+];
+const SVG_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const SVG_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
+const SVG_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4.5" height="14" rx="1.5"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.5"/></svg>';
+let hDate = today(), hCalMonth = null, hDetailId = null;
+
+const fmtNum = n => (Math.round(n * 10) / 10).toLocaleString('id-ID');
+const fmtM = m => { m = Math.floor(m); return m < 60 ? `${m}m` : `${Math.floor(m / 60)}j${m % 60 ? ' ' + (m % 60) + 'm' : ''}`; };
+const fmtClock = m => { const s = Math.floor(m * 60); const h = Math.floor(s / 3600); return h ? `${h}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}` : `${Math.floor(s / 60)}:${pad(s % 60)}`; };
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function hLog(d, id) { return S.hlog[d]?.[id] || null; }
+function hSet(d, id, patch) {
+  const day = S.hlog[d] || (S.hlog[d] = {});
+  const nx = {...(day[id] || {}), ...patch};
+  if (!nx.v) delete nx.v; if (!nx.steps || !nx.steps.length) delete nx.steps; if (!nx.failed) delete nx.failed;
+  if (Object.keys(nx).length) day[id] = nx; else delete day[id];
+  if (!Object.keys(day).length) delete S.hlog[d];
+}
+const hById = id => S.habits.find(h => h.id === id);
+const hActive = () => S.habits.filter(h => !h.archived);
+function hGoal(h) { return h.type === 'check' ? 1 : h.type === 'list' ? Math.max(1, (h.steps || []).length) : Math.max(0.1, +h.goal || 1); }
+function hRunMin(h, d) { const t = S.htimer; return t && t.hid === h.id && t.date === d ? (Date.now() - t.startAt) / 60000 : 0; }
+function hVal(h, d) {
+  const l = hLog(d, h.id);
+  if (h.type === 'list') return l?.steps ? l.steps.filter(s => (h.steps || []).some(x => x.id === s)).length : 0;
+  return (l?.v || 0) + (h.type === 'timer' ? hRunMin(h, d) : 0);
+}
+const hFailed = (h, d) => !!hLog(d, h.id)?.failed;
+function hDone(h, d) { if (hFailed(h, d)) return false; const v = hVal(h, d), g = hGoal(h); return h.limit ? v <= g : v >= g - 1e-9; }
+const hFrac = (h, d) => clamp(hVal(h, d) / hGoal(h), 0, 1);
+function hSched(h, d) {
+  if (d < h.created) return false;
+  const s = h.sched || {k: 'daily'}, dt = parseYmd(d);
+  if (s.k === 'days') return (s.days || []).includes(dt.getDay());
+  if (s.k === 'dates') return (s.dates || []).includes(dt.getDate());
+  return true;
+}
+function hStreak(h) {
+  const t = today(); if (hSched(h, t) && hFailed(h, t)) return 0;
+  let d = t, n = 0, g = 0;
+  if (hSched(h, d) && !hDone(h, d)) d = addDays(d, -1);
+  while (g++ < 1500 && d >= h.created) { if (hSched(h, d)) { if (hDone(h, d)) n++; else break; } d = addDays(d, -1); }
+  return n;
+}
+function hBest(h) {
+  let best = 0, cur = 0, g = 0;
+  for (let d = h.created; d <= today() && g++ < 1500; d = addDays(d, 1)) {
+    if (!hSched(h, d)) continue;
+    if (hDone(h, d)) { cur++; if (cur > best) best = cur; } else if (d < today()) cur = 0;
+  }
+  return best;
+}
+function hRate(h, n = 30, end = today()) {
+  let s = 0, dn = 0;
+  for (let i = 0; i < n; i++) {
+    const d = addDays(end, -i); if (d < h.created) break; if (d > today() || !hSched(h, d)) continue;
+    if (d === today() && !hDone(h, d)) continue;
+    s++; if (hDone(h, d)) dn++;
+  }
+  return s ? dn / s : null;
+}
+function hTotalDone(h) { let n = 0, g = 0; for (let d = h.created; d <= today() && g++ < 1500; d = addDays(d, 1)) if (hSched(h, d) && hDone(h, d) && !(h.limit && !hLog(d, h.id) && d === today())) n++; return n; }
+function hDayProg(d) { const hs = hActive().filter(h => hSched(h, d)); return {done: hs.filter(h => hDone(h, d)).length, total: hs.length}; }
+function hValTxt(h, d) {
+  const v = hVal(h, d), g = hGoal(h);
+  if (h.type === 'check') return hDone(h, d) ? 'Selesai' : (h.limit ? '' : 'Belum');
+  if (h.type === 'list') return `${v}/${g} langkah`;
+  if (h.type === 'timer') { const run = hRunMin(h, d) > 0; return `${run ? fmtClock(v) : fmtM(v)} / ${fmtM(g)}`; }
+  return `${fmtNum(v)}/${fmtNum(g)}${h.unit ? ' ' + h.unit : ''}`;
+}
+function schedTxt(h) {
+  const s = h.sched || {k: 'daily'};
+  if (s.k === 'days') { const ds = [...(s.days || [])].sort(); const k = ds.join(); if (k === '1,2,3,4,5') return 'Hari kerja'; if (k === '0,6') return 'Akhir pekan'; if (ds.length === 7) return 'Setiap hari'; return ds.map(x => HARI_S[x]).join(', '); }
+  if (s.k === 'dates') return 'Tanggal ' + [...(s.dates || [])].sort((a, b) => a - b).join(', ');
+  return 'Setiap hari';
+}
+function goalTxt(h) {
+  if (h.type === 'check') return 'Ya / tidak';
+  if (h.type === 'list') return `${(h.steps || []).length} langkah`;
+  return `${h.limit ? 'Maksimal ' : ''}${h.type === 'timer' ? fmtM(h.goal) : fmtNum(h.goal) + (h.unit ? ' ' + h.unit : '')} per hari`;
+}
+
+/* ---- render ---- */
+function hChartHtml(h) {
+  const t = today(), ch = h.chart || 'grid';
+  if (ch === 'none') return '';
+  if (ch === 'grid') {
+    const W = 32, end = addDays(weekStart(t), 6), start = addDays(end, -(W * 7 - 1));
+    let s = `<div class="hchart"><div class="hgrid" style="grid-template-columns:repeat(${W},1fr)">`;
+    for (let i = 0; i < W * 7; i++) {
+      const d = addDays(start, i); let st = '';
+      if (d > t || d < h.created || !hSched(h, d)) st = 'opacity:.35';
+      else if (hFailed(h, d)) st = 'background:color-mix(in srgb,#FF3B30 50%,transparent)';
+      else { const f = h.limit ? (hDone(h, d) ? 1 : 0) : hFrac(h, d); if (f > 0) st = `background:color-mix(in srgb,var(--hc) ${Math.round(28 + f * 72)}%,transparent)`; }
+      s += `<i style="${st}"></i>`;
+    }
+    return s + '</div></div>';
+  }
+  const days = Array.from({length: 14}, (_, i) => addDays(t, i - 13));
+  const fr = d => (d < h.created || !hSched(h, d)) ? null : (h.limit ? Math.min(1, hVal(h, d) / hGoal(h)) : hFrac(h, d));
+  if (ch === 'bars') return `<div class="hchart"><div class="hbars">${days.map(d => { const f = fr(d); return `<i style="${f == null ? 'opacity:.35' : ''}"><b style="height:${(f || 0) * 100}%"></b></i>`; }).join('')}</div></div>`;
+  const pts = days.map((d, i) => [i * 10 + 5, 36 - (fr(d) || 0) * 32]);
+  const line = pts.map(p => p.join(',')).join(' ');
+  return `<div class="hchart hline"><svg viewBox="0 0 140 40" preserveAspectRatio="none"><polygon points="5,40 ${line} 135,40" fill="var(--hc)" opacity=".14"/><polyline points="${line}" fill="none" stroke="var(--hc)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg></div>`;
+}
+function hSubHtml(h, d) {
+  const v = hVal(h, d), g = hGoal(h), failed = hFailed(h, d), st = hStreak(h), over = h.limit && v > g;
+  const txt = hValTxt(h, d);
+  return `<span>${failed ? '<span class="fail">Gagal hari ini</span>' : esc(txt)}${h.limit ? (over ? ' · <span class="fail">lewat batas</span>' : (txt ? ' · ' : '') + 'dalam batas') : ''}</span>${st ? `<span class="st">🔥 ${st}</span>` : ''}`;
+}
+function hActHtml(h, d) {
+  const done = hDone(h, d), fr = hFrac(h, d), run = hRunMin(h, d) > 0;
+  if (hFailed(h, d)) return `<button class="hact" data-a="unfail" style="--hc:var(--danger)" aria-label="Batalkan gagal">✕</button>`;
+  if (h.type === 'check') return `<button class="hact${done ? ' done' : ''}" data-a="tog" aria-label="Centang">${done ? SVG_CHECK : ''}</button>`;
+  if (h.type === 'count') return done && !h.limit ? `<button class="hact done" data-a="inc">${SVG_CHECK}</button>` : `<button class="hact" data-a="inc" style="--p:${fr * 100}" aria-label="Tambah"><span class="mini"></span>＋</button>`;
+  if (h.type === 'timer') return `<button class="hact${run ? ' run' : done && !h.limit ? ' done' : ''}" data-a="tmr" style="--p:${fr * 100}" aria-label="Timer">${run ? SVG_PAUSE : done && !h.limit ? SVG_CHECK : SVG_PLAY + '<span class="mini"></span>'}</button>`;
+  return `<button class="hact${done ? ' done' : ''}" data-a="list" style="--p:${fr * 100}">${done ? SVG_CHECK : `<span class="mini"></span><small style="font-size:12px">${hVal(h, d)}/${hGoal(h)}</small>`}</button>`;
+}
+function hFillW(h, d) { if (hFailed(h, d)) return 0; return h.type === 'check' ? (hDone(h, d) && !h.limit ? 100 : 0) : hFrac(h, d) * 100; }
+function hCardHtml(h, d, off) {
+  const over = h.limit && hVal(h, d) > hGoal(h);
+  return `<div class="hcard${hFailed(h, d) ? ' failed' : ''}${off ? ' off' : ''}" data-id="${h.id}" style="--hc:${over ? '#FF3B30' : h.color}">
+    <div class="hfill" style="width:${hFillW(h, d)}%"></div>
+    <div class="hrow"><div class="hicon">${esc(h.icon || '⭐')}</div><div class="hmain"><div class="hname">${esc(h.name)}</div><div class="hsub">${hSubHtml(h, d)}</div></div>${hActHtml(h, d)}</div>
+    ${hChartHtml(h)}</div>`;
+}
+function renderHabits() {
+  if (view !== 'habits') return;
+  const el = $('#view-habits'), t = today(), act = hActive();
+  const ws = weekStart(hDate);
+  let h = `<div class="hweek"><button class="nav" id="hwPrev" aria-label="Minggu sebelumnya">‹</button>`;
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(ws, i), {done, total} = hDayProg(d), p = total ? Math.round(done / total * 100) : 0, dt = parseYmd(d);
+    h += `<button class="hday${d === hDate ? ' sel' : ''}${d > t ? ' fut' : ''}${total && done === total && d <= t ? ' full' : ''}" data-d="${d}"><span class="wd">${HARI_S[dt.getDay()]}</span><span class="ring" style="--p:${d > t ? 0 : p}"><span>${dt.getDate()}</span></span></button>`;
+  }
+  h += `<button class="nav" id="hwNext" aria-label="Minggu berikutnya">›</button></div>`;
+  if (!act.length) {
+    h += `<div class="hempty"><div class="e">🌱</div><h3>Mulai bangun kebiasaan</h3><div class="small">Pilih template di bawah atau buat sendiri. Semua fitur gratis, tanpa batas jumlah kebiasaan.</div></div>
+      <div class="card glass"><div class="tpl">${HTEMPLATES.slice(0, 10).map((x, i) => `<button data-tpl="${i}"><span style="background:color-mix(in srgb,${x.color} 22%,transparent)">${x.icon}</span>${esc(x.name)}</button>`).join('')}</div>
+      <button class="btn pri" id="hNewBlank" style="width:100%;margin-top:12px">Buat kebiasaan sendiri</button></div>`;
+  } else {
+    const {done, total} = hDayProg(hDate), R = 31, C = 2 * Math.PI * R, fr = total ? done / total : 0;
+    const best = act.reduce((a, x) => Math.max(a, hStreak(x)), 0);
+    const rel = hDate === t ? 'Hari ini' : fmtDate(hDate);
+    h += `<div class="card glass hsum"><div class="bigring"><svg viewBox="0 0 74 74"><circle cx="37" cy="37" r="${R}" fill="none" stroke="var(--cell)" stroke-width="8"/><circle cx="37" cy="37" r="${R}" fill="none" stroke="#30D158" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - fr)}"/></svg><b>${Math.round(fr * 100)}%</b></div>
+      <div><div class="t1">${total ? `${done} dari ${total} selesai` : 'Tidak ada jadwal'}</div><div class="t2">${rel}${total && done === total ? ' · Semua tuntas! 🎉' : ''}${best ? `<br>Streak terpanjang aktif: 🔥 ${best} hari` : ''}</div></div></div>`;
+    const sch = act.filter(x => hSched(x, hDate)), un = act.filter(x => !hSched(x, hDate));
+    const groups = [];
+    for (const x of sch) { const g = x.group || ''; let gr = groups.find(y => y.g === g); if (!gr) groups.push(gr = {g, items: []}); gr.items.push(x); }
+    groups.sort((a, b) => (a.g === '') - (b.g === ''));
+    for (const gr of groups) {
+      if (groups.length > 1 || gr.g) h += `<div class="hgroup"><span>${esc(gr.g || 'Lainnya')}</span><span>${gr.items.filter(x => hDone(x, hDate)).length}/${gr.items.length}</span></div>`;
+      h += gr.items.map(x => hCardHtml(x, hDate)).join('');
+    }
+    if (un.length) h += `<div class="hgroup"><span>Tidak dijadwalkan</span></div>` + un.map(x => hCardHtml(x, hDate, true)).join('');
+    h += `<div class="small" style="text-align:center;margin:14px 20px">Geser kartu ke kanan/kiri untuk mengisi progres · ketuk kartu untuk detail</div>`;
+  }
+  el.innerHTML = h;
+  $$('.hday', el).forEach(b => b.onclick = () => { hDate = b.dataset.d; renderHabits(); });
+  $('#hwPrev').onclick = () => { hDate = addDays(hDate, -7); renderHabits(); };
+  $('#hwNext').onclick = () => { hDate = addDays(hDate, 7); renderHabits(); };
+  $$('[data-tpl]', el).forEach(b => b.onclick = () => openHabitEditor(null, HTEMPLATES[+b.dataset.tpl]));
+  if ($('#hNewBlank')) $('#hNewBlank').onclick = () => openHabitEditor(null, null, true);
+}
+function refreshHabitCard(id) {
+  if (view !== 'habits') return;
+  const card = $(`.hcard[data-id="${id}"]`), h = hById(id); if (!card || !h) return;
+  card.querySelector('.hsub').innerHTML = hSubHtml(h, hDate);
+  card.querySelector('.hfill').style.width = hFillW(h, hDate) + '%';
+  const a = card.querySelector('.hact'), tmp = document.createElement('div'); tmp.innerHTML = hActHtml(h, hDate);
+  if (a.outerHTML !== tmp.firstElementChild.outerHTML) a.replaceWith(tmp.firstElementChild);
+}
+
+/* ---- aksi ---- */
+function hCommit(h, d, fn) {
+  const was = hDone(h, d);
+  fn(); save();
+  if (!h.limit && !was && hDone(h, d)) { haptic(); const s = hStreak(h); toast(`🎉 ${h.name} selesai!${s > 1 ? ` 🔥 ${s} hari beruntun` : ''}`); }
+  renderHabits(); if (view === 'stats') renderStats();
+}
+function hAction(h, a, d) {
+  const g = hGoal(h);
+  if (a === 'unfail') return hCommit(h, d, () => hSet(d, h.id, {failed: false}));
+  if (a === 'tog') return hCommit(h, d, () => hSet(d, h.id, {v: hDone(h, d) && !h.limit ? 0 : 1}));
+  if (a === 'inc') {
+    if (h.limit || g > 20 || hDone(h, d)) return openValueSheet(h, d);
+    return hCommit(h, d, () => hSet(d, h.id, {v: (hLog(d, h.id)?.v || 0) + 1}));
+  }
+  if (a === 'tmr') { if (d !== today()) return openValueSheet(h, d); toggleHTimer(h); return; }
+  if (a === 'list') return openStepsSheet(h, d);
+}
+function toggleHTimer(h) {
+  const t = S.htimer;
+  if (t && t.hid === h.id && t.date === today()) { stopHTimer(); renderHabits(); return; }
+  if (t) stopHTimer();
+  S.htimer = {hid: h.id, date: today(), startAt: Date.now(), warned: false}; unlockAudio(); save(); renderHabits();
+}
+function stopHTimer() {
+  const t = S.htimer; if (!t) return; S.htimer = null;
+  const h = hById(t.hid);
+  if (h) { const add = (Date.now() - t.startAt) / 60000; hSet(t.date, h.id, {v: Math.round(((hLog(t.date, h.id)?.v || 0) + add) * 100) / 100}); }
+  save();
+}
+function tickHabitTimer() {
+  const t = S.htimer; if (!t) return;
+  const h = hById(t.hid); if (!h) { S.htimer = null; save(); return; }
+  if (t.date !== today()) { stopHTimer(); renderHabits(); return; }
+  const v = hVal(h, t.date), g = hGoal(h);
+  if (!h.limit && v >= g) { stopHTimer(); notify(`Target tercapai: ${h.name} 🎉`, fmtM(g)); renderHabits(); return; }
+  if (h.limit && v > g && !t.warned) { t.warned = true; save(); notify(`Batas ${h.name} terlampaui`, `Maksimal ${fmtM(g)}`); }
+  refreshHabitCard(h.id);
+}
+
+/* ---- geser kartu untuk mengisi progres ---- */
+(() => {
+  let st = null;
+  const area = () => $('#view-habits');
+  area().addEventListener('pointerdown', e => {
+    const card = e.target.closest('.hcard'); if (!card || e.target.closest('.hact')) return;
+    st = {card, id: card.dataset.id, x: e.clientX, y: e.clientY, pid: e.pointerId, drag: false, val: null};
+  });
+  area().addEventListener('pointermove', e => {
+    if (!st || e.pointerId !== st.pid) return;
+    const dx = e.clientX - st.x, dy = e.clientY - st.y;
+    if (!st.drag) {
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+        const h = hById(st.id); if (!h || hFailed(h, hDate) || hDate > today()) { st = null; return; }
+        st.drag = true; st.card.classList.add('dragging'); try { st.card.setPointerCapture(e.pointerId); } catch (_) {}
+        if (S.htimer && S.htimer.hid === h.id) stopHTimer();
+        st.lbl = document.createElement('div'); st.lbl.className = 'hdrag'; st.card.appendChild(st.lbl);
+      } else if (Math.abs(dy) > 12) { st = null; return; } else return;
+    }
+    const h = hById(st.id), g = hGoal(h), r = st.card.getBoundingClientRect();
+    const f = clamp((e.clientX - r.left - 8) / (r.width - 16), 0, 1);
+    let v;
+    if (h.type === 'check') v = f >= .5 ? 1 : 0;
+    else if (h.type === 'list') v = Math.round(f * g);
+    else { const step = h.type === 'timer' ? (g >= 60 ? 5 : 1) : (g >= 1000 ? 100 : g >= 100 ? 10 : g >= 20 ? 1 : 1); v = Math.round(f * g / step) * step; }
+    st.val = v;
+    st.card.querySelector('.hfill').style.width = (g ? clamp(v / g, 0, 1) : 0) * 100 + '%';
+    st.lbl.textContent = h.type === 'check' ? (v ? '✓' : '–') : h.type === 'timer' ? fmtM(v) : h.type === 'list' ? `${v}/${g}` : fmtNum(v);
+  });
+  const end = e => {
+    if (!st) return;
+    if (st.drag) {
+      const h = hById(st.id), v = st.val; st.card.classList.remove('dragging'); st.lbl?.remove(); window._hDragEnd = Date.now();
+      if (h && v != null) hCommit(h, hDate, () => {
+        if (h.type === 'list') hSet(hDate, h.id, {steps: (h.steps || []).slice(0, v).map(s => s.id)});
+        else hSet(hDate, h.id, {v});
+      });
+    }
+    st = null;
+  };
+  area().addEventListener('touchmove', e => { if (st && st.drag) e.preventDefault(); }, {passive: false});
+  area().addEventListener('pointerup', end); area().addEventListener('pointercancel', () => { if (st?.drag) { st.card.classList.remove('dragging'); st.lbl?.remove(); renderHabits(); } st = null; });
+  area().addEventListener('click', e => {
+    if (Date.now() - (window._hDragEnd || 0) < 400) return;
+    const b = e.target.closest('.hact'); const card = e.target.closest('.hcard'); if (!card) return;
+    const h = hById(card.dataset.id); if (!h) return;
+    if (b) { e.stopPropagation(); hAction(h, b.dataset.a, hDate); return; }
+    openHabitDetail(h.id);
+  });
+})();
+
+/* ---- sheet: isi nilai / checklist ---- */
+function openValueSheet(h, d) {
+  const g = hGoal(h), unit = h.type === 'timer' ? 'menit' : (h.unit || '');
+  const step = h.type === 'timer' ? (g >= 60 ? 5 : 1) : (g >= 1000 ? 500 : g >= 100 ? 10 : 1);
+  const cur = Math.round((hLog(d, h.id)?.v || 0) * 10) / 10;
+  openSheet(`<div class="sh-head"><b>${esc(h.icon)} ${esc(h.name)}</b><span>${esc(fmtDate(d))}</span></div>
+    <div class="stepper"><button id="vMinus">−</button><input id="vIn" type="number" inputmode="decimal" value="${cur}" min="0"><button id="vPlus">+</button></div>
+    <div class="small" style="text-align:center">${esc(unit)} · ${h.limit ? 'batas maksimal' : 'target'} ${fmtNum(g)}</div>
+    <div class="chips" style="justify-content:center;margin-top:14px">${[step, step * 5].map(x => `<button class="chip" data-add="${x}">+${fmtNum(x)}</button>`).join('')}${h.limit ? '' : `<button class="chip" data-set="${g}">Capai target</button>`}<button class="chip" data-set="0">Nol</button></div>
+    <div class="btn-row"><button class="btn" id="vCancel">Batal</button><button class="btn pri" id="vSave">Simpan</button></div>`);
+  const inp = $('#vIn'), get = () => Math.max(0, parseFloat(String(inp.value).replace(',', '.')) || 0);
+  $('#vMinus').onclick = () => inp.value = Math.max(0, get() - step);
+  $('#vPlus').onclick = () => inp.value = get() + step;
+  $$('#sheetBody [data-add]').forEach(b => b.onclick = () => inp.value = get() + +b.dataset.add);
+  $$('#sheetBody [data-set]').forEach(b => b.onclick = () => inp.value = +b.dataset.set);
+  $('#vCancel').onclick = closeSheet;
+  $('#vSave').onclick = () => { const v = get(); if (S.htimer?.hid === h.id && d === today()) S.htimer = null; closeSheet(); hCommit(h, d, () => hSet(d, h.id, {v})); if (hDetailId) setTimeout(() => openHabitDetail(h.id), 320); };
+}
+function openStepsSheet(h, d) {
+  const draw = () => {
+    const done = new Set(hLog(d, h.id)?.steps || []);
+    $('#sheetBody').innerHTML = `<div class="sh-head"><b>${esc(h.icon)} ${esc(h.name)}</b><span>${esc(fmtDate(d))}</span></div>
+      <div class="steps" style="--hc:${h.color}">${(h.steps || []).map(s => `<button class="stp${done.has(s.id) ? ' on' : ''}" data-s="${s.id}"><span class="bx">${done.has(s.id) ? '✓' : ''}</span><span class="nm">${esc(s.name)}</span></button>`).join('')}</div>
+      <div class="btn-row"><button class="btn" id="sAll">${done.size === (h.steps || []).length ? 'Kosongkan' : 'Centang semua'}</button><button class="btn pri" id="sOk">Selesai</button></div>`;
+    $$('#sheetBody .stp').forEach(b => b.onclick = () => {
+      const cur = new Set(hLog(d, h.id)?.steps || []); cur.has(b.dataset.s) ? cur.delete(b.dataset.s) : cur.add(b.dataset.s);
+      hCommit(h, d, () => hSet(d, h.id, {steps: [...cur]})); haptic(); draw();
+    });
+    $('#sAll').onclick = () => { const all = done.size === (h.steps || []).length; hCommit(h, d, () => hSet(d, h.id, {steps: all ? [] : h.steps.map(s => s.id)})); draw(); };
+    $('#sOk').onclick = () => { closeSheet(); if (hDetailId) setTimeout(() => openHabitDetail(h.id), 320); };
+  };
+  openSheet(''); draw();
+}
+
+/* ---- detail kebiasaan ---- */
+function openHabitDetail(id) {
+  const h = hById(id); if (!h) return;
+  hDetailId = id; if (!hCalMonth || hCalMonth.slice(0, 7) !== hDate.slice(0, 7)) hCalMonth = hDate.slice(0, 7) + '-01';
+  const draw = () => {
+    const t = today(), m0 = parseYmd(hCalMonth), y = m0.getFullYear(), mo = m0.getMonth();
+    const first = (m0.getDay() + 6) % 7, nd = new Date(y, mo + 1, 0).getDate();
+    let cal = ['Sn','Sl','Rb','Km','Jm','Sb','Mg'].map(x => `<span class="wd">${x}</span>`).join('') + '<span></span>'.repeat(first);
+    for (let i = 1; i <= nd; i++) {
+      const d = ymd(new Date(y, mo, i)), na = d > t || !hSched(h, d);
+      const cls = [na ? 'na' : '', !na && hDone(h, d) && !(h.limit && d === t && !hLog(d, h.id)) ? 'full' : '', hFailed(h, d) ? 'fl' : '', d === t ? 'td' : ''].join(' ');
+      cal += `<button class="${cls}" data-d="${d}" style="--p:${na ? 0 : (h.limit ? 0 : hFrac(h, d) * 100)}"><span>${i}</span></button>`;
+    }
+    const rate = hRate(h, 30), failedToday = hFailed(h, hDate);
+    $('#sheetBody').innerHTML = `
+      <div class="sh-head" style="align-items:center;justify-content:flex-start;gap:12px"><div class="hicon" style="--hc:${h.color}">${esc(h.icon)}</div><div style="flex:1;min-width:0"><b style="display:block">${esc(h.name)}</b><span>${esc(goalTxt(h))} · ${esc(schedTxt(h))}${h.remindAt ? ' · ⏰ ' + h.remindAt : ''}</span></div></div>
+      <div class="hstats"><div><b>🔥 ${hStreak(h)}</b><span>Streak</span></div><div><b>🏆 ${hBest(h)}</b><span>Terbaik</span></div><div><b>${rate == null ? '–' : Math.round(rate * 100) + '%'}</b><span>30 hari</span></div><div><b>${hTotalDone(h)}</b><span>Total hari</span></div></div>
+      <div class="calhd"><button id="cPrev">‹</button><b>${['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][mo]} ${y}</b><button id="cNext">›</button></div>
+      <div class="cal" style="--hc:${h.color}">${cal}</div>
+      <div class="small" style="margin-top:8px">Ketuk tanggal untuk menandai selesai / belum.</div>
+      <div class="btn-row"><button class="btn pri" id="dProg">Isi progres ${hDate === t ? 'hari ini' : esc(fmtDate(hDate))}</button></div>
+      ${h.remindAt ? `<div class="btn-row"><button class="btn" id="dIcs">📅 Pasang pengingat ${h.remindAt} di Kalender iPhone</button></div>` : ''}
+      <div class="btn-row"><button class="btn${failedToday ? '' : ' dan'}" id="dFail">${failedToday ? 'Batalkan gagal' : 'Tandai gagal'}</button><button class="btn" id="dEdit">Edit</button></div>
+      <div class="btn-row"><button class="btn" id="dArc">Arsipkan</button><button class="btn dan" id="dDel">Hapus</button></div>`;
+    $('#cPrev').onclick = () => { hCalMonth = ymd(new Date(y, mo - 1, 1)); draw(); };
+    $('#cNext').onclick = () => { hCalMonth = ymd(new Date(y, mo + 1, 1)); draw(); };
+    $$('#sheetBody .cal button[data-d]').forEach(b => b.onclick = () => {
+      const d = b.dataset.d; if (d > t || !hSched(h, d)) return;
+      hCommit(h, d, () => {
+        if (h.limit) hSet(d, h.id, {failed: !hFailed(h, d)});
+        else if (hDone(h, d)) hSet(d, h.id, {v: 0, steps: [], failed: false});
+        else if (h.type === 'list') hSet(d, h.id, {steps: h.steps.map(s => s.id), failed: false});
+        else hSet(d, h.id, {v: hGoal(h), failed: false});
+      }); haptic(); draw();
+    });
+    $('#dProg').onclick = () => { if (h.type === 'list') openStepsSheet(h, hDate); else if (h.type === 'check') { hAction(h, 'tog', hDate); draw(); } else openValueSheet(h, hDate); };
+    $('#dFail').onclick = () => { hCommit(h, hDate, () => hSet(hDate, h.id, {failed: !failedToday})); draw(); };
+    if ($('#dIcs')) $('#dIcs').onclick = () => exportHabitICS(h);
+    $('#dEdit').onclick = () => { closeSheet(); setTimeout(() => openHabitEditor(h.id), 300); };
+    $('#dArc').onclick = () => { h.archived = true; if (S.htimer?.hid === h.id) stopHTimer(); save(); closeSheet(); renderHabits(); toast('Diarsipkan — pulihkan di Setelan'); };
+    $('#dDel').onclick = () => {
+      if (!confirm(`Hapus kebiasaan "${h.name}" beserta riwayatnya?`)) return;
+      const k = snap(); if (S.htimer?.hid === h.id) S.htimer = null;
+      S.habits = S.habits.filter(x => x.id !== h.id); for (const d of Object.keys(S.hlog)) { delete S.hlog[d][h.id]; if (!Object.keys(S.hlog[d]).length) delete S.hlog[d]; }
+      save(); closeSheet(); renderHabits(); toast('Kebiasaan dihapus', {undoK: k});
+    };
+  };
+  openSheet(''); draw();
+  const obs = setInterval(() => { if (!$('#sheet').classList.contains('open')) { hDetailId = null; clearInterval(obs); } }, 500);
+}
+
+/* ---- buat / edit kebiasaan ---- */
+function openHabitEditor(id, tpl, blank) {
+  const ex = id ? hById(id) : null;
+  const base = {name: '', icon: '⭐', color: HCOLORS[(S.habits.length + 6) % HCOLORS.length], type: 'check', goal: 1, unit: '', limit: false, steps: [], sched: {k: 'daily', days: [1,2,3,4,5], dates: [1]}, group: '', remindAt: '', chart: 'grid'};
+  const f = ex ? JSON.parse(JSON.stringify(ex)) : {...base};
+  if (!f.sched.days) f.sched.days = [1,2,3,4,5]; if (!f.sched.dates) f.sched.dates = [1];
+  const applyTpl = x => { Object.assign(f, {name: x.name, icon: x.icon, color: x.color, type: x.type, goal: x.goal || 1, unit: x.unit || '', limit: !!x.limit, group: x.group || '', steps: (x.steps || []).map(n => ({id: uid(), name: n}))}); };
+  if (tpl) applyTpl(tpl);
+  let showTpl = !ex && !tpl && !blank;
+  const collect = () => {
+    const q = s => $('#sheetBody ' + s);
+    if (q('#eName')) f.name = q('#eName').value;
+    if (q('#eGoal')) f.goal = Math.max(0.1, parseFloat(String(q('#eGoal').value).replace(',', '.')) || 1);
+    if (q('#eUnit')) f.unit = q('#eUnit').value.trim();
+    if (q('#eGroup')) f.group = q('#eGroup').value.trim();
+    if (q('#eRem')) f.remindAt = q('#eRem').value;
+    if (q('#eLimit')) f.limit = q('#eLimit').checked;
+    $$('#sheetBody .step-ed input').forEach((i, k) => { if (f.steps[k]) f.steps[k].name = i.value; });
+  };
+  const groups = [...new Set([...S.habits.map(x => x.group).filter(Boolean), 'Pagi', 'Siang', 'Malam', 'Kesehatan', 'Ibadah', 'Belajar'])];
+  const draw = () => {
+    let h = `<div class="sh-head"><b>${ex ? 'Edit kebiasaan' : 'Kebiasaan baru'}</b>${!ex ? `<button class="chip" id="eTplT">${showTpl ? 'Buat sendiri' : 'Template'}</button>` : ''}</div>`;
+    if (showTpl) {
+      h += `<div class="tpl">${HTEMPLATES.map((x, i) => `<button data-tpl="${i}"><span style="background:color-mix(in srgb,${x.color} 22%,transparent)">${x.icon}</span>${esc(x.name)}</button>`).join('')}</div>`;
+      $('#sheetBody').innerHTML = h;
+      $$('#sheetBody [data-tpl]').forEach(b => b.onclick = () => { applyTpl(HTEMPLATES[+b.dataset.tpl]); showTpl = false; draw(); });
+      $('#eTplT').onclick = () => { showTpl = false; draw(); };
+      return;
+    }
+    h += `<div class="nrow"><div class="hicon" style="--hc:${f.color};width:52px;height:52px;font-size:27px">${esc(f.icon)}</div><input class="fld" id="eName" placeholder="Nama kebiasaan" maxlength="40" value="${esc(f.name)}"></div>
+      <div class="sec-lbl">Ikon</div><div class="emo">${HEMOJI.map(e => `<button class="${e === f.icon ? 'on' : ''}" data-e="${e}">${e}</button>`).join('')}</div>
+      <div class="sec-lbl">Warna</div><div class="colors">${HCOLORS.map(c => `<button class="${c === f.color ? 'on' : ''}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>
+      <div class="sec-lbl">Jenis</div><div class="typeseg" id="eType">${[['check','Ya/Tidak'],['count','Hitungan'],['timer','Waktu'],['list','Checklist']].map(([k, n]) => `<button data-t="${k}" class="${f.type === k ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+    if (f.type === 'count') h += `<div class="sec-lbl">Target per hari</div><div class="nrow"><input class="fld" id="eGoal" type="number" inputmode="decimal" value="${f.goal}" min="1"><input class="fld" id="eUnit" placeholder="satuan (gelas, halaman…)" value="${esc(f.unit)}"></div>`;
+    if (f.type === 'timer') h += `<div class="sec-lbl">Durasi per hari (menit)</div><input class="fld" id="eGoal" type="number" inputmode="numeric" value="${f.goal}" min="1">`;
+    if (f.type === 'count' || f.type === 'timer') h += `<div class="set-row"><div class="lbl">Jadikan batasan<small>Untuk kebiasaan yang ingin dikurangi (mis. media sosial)</small></div><label class="tg"><input type="checkbox" id="eLimit"${f.limit ? ' checked' : ''}><span></span></label></div>`;
+    if (f.type === 'list') h += `<div class="sec-lbl">Langkah</div>${f.steps.map((s, k) => `<div class="step-ed"><input class="fld" value="${esc(s.name)}" placeholder="Langkah ${k + 1}"><button data-rm="${k}">✕</button></div>`).join('')}<button class="btn" id="eAddStep" style="width:100%;margin-top:4px">+ Tambah langkah</button>`;
+    h += `<div class="sec-lbl">Jadwal</div><div class="typeseg" id="eSched" style="grid-template-columns:repeat(3,1fr)">${[['daily','Setiap hari'],['days','Hari tertentu'],['dates','Tanggal']].map(([k, n]) => `<button data-k="${k}" class="${f.sched.k === k ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+    if (f.sched.k === 'days') h += `<div class="dows" style="margin-top:10px">${[1,2,3,4,5,6,0].map(x => `<button data-w="${x}" class="${f.sched.days.includes(x) ? 'on' : ''}">${HARI_S[x].slice(0, 2)}</button>`).join('')}</div>`;
+    if (f.sched.k === 'dates') h += `<div class="dates" style="margin-top:10px">${Array.from({length: 31}, (_, i) => i + 1).map(x => `<button data-dt="${x}" class="${f.sched.dates.includes(x) ? 'on' : ''}">${x}</button>`).join('')}</div>`;
+    h += `<div class="sec-lbl">Grup</div><input class="fld" id="eGroup" placeholder="mis. Pagi, Kesehatan" value="${esc(f.group)}" list="eGroups"><datalist id="eGroups">${groups.map(g => `<option value="${esc(g)}">`).join('')}</datalist>
+      <div class="chips" style="margin-top:8px">${groups.slice(0, 6).map(g => `<button class="chip" data-g="${esc(g)}">${esc(g)}</button>`).join('')}</div>
+      <div class="set-row" style="margin-top:6px"><div class="lbl">Pengingat<small>Diingatkan jika belum selesai</small></div><input type="time" id="eRem" value="${esc(f.remindAt || '')}" style="background:var(--cell);border:0;border-radius:11px;padding:7px 10px"></div>
+      <div class="sec-lbl">Grafik di daftar</div><div class="typeseg" id="eChart">${[['grid','Kotak'],['bars','Batang'],['line','Garis'],['none','Tidak ada']].map(([k, n]) => `<button data-ch="${k}" class="${(f.chart || 'grid') === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+      <div class="btn-row"><button class="btn" id="eCancel">Batal</button><button class="btn pri" id="eSave">${ex ? 'Simpan' : 'Tambah'}</button></div>`;
+    $('#sheetBody').innerHTML = h;
+    const on = (sel, fn) => $$('#sheetBody ' + sel).forEach(b => b.onclick = () => { collect(); fn(b); draw(); });
+    if ($('#eTplT')) $('#eTplT').onclick = () => { collect(); showTpl = true; draw(); };
+    on('.emo button', b => f.icon = b.dataset.e);
+    on('.colors button', b => f.color = b.dataset.c);
+    on('#eType button', b => { f.type = b.dataset.t; if (f.type === 'timer' && f.goal < 5) f.goal = 30; if (f.type === 'count' && f.goal < 2) f.goal = 8; if (f.type === 'list' && !f.steps.length) f.steps = [{id: uid(), name: ''}, {id: uid(), name: ''}]; });
+    on('#eSched button', b => f.sched.k = b.dataset.k);
+    on('.dows button', b => { const x = +b.dataset.w; f.sched.days = f.sched.days.includes(x) ? f.sched.days.filter(y => y !== x) : [...f.sched.days, x]; });
+    on('.dates button', b => { const x = +b.dataset.dt; f.sched.dates = f.sched.dates.includes(x) ? f.sched.dates.filter(y => y !== x) : [...f.sched.dates, x]; });
+    on('[data-g]', b => f.group = b.dataset.g);
+    on('#eChart button', b => f.chart = b.dataset.ch);
+    on('[data-rm]', b => f.steps.splice(+b.dataset.rm, 1));
+    if ($('#eAddStep')) $('#eAddStep').onclick = () => { collect(); f.steps.push({id: uid(), name: ''}); draw(); setTimeout(() => { const l = $$('#sheetBody .step-ed input'); l[l.length - 1]?.focus(); }, 50); };
+    $('#eCancel').onclick = closeSheet;
+    $('#eSave').onclick = () => {
+      collect();
+      f.name = f.name.trim(); if (!f.name) { toast('Isi nama kebiasaan dulu'); $('#eName').focus(); return; }
+      if (f.type === 'list') { f.steps = f.steps.filter(s => s.name.trim()); if (!f.steps.length) { toast('Tambahkan minimal 1 langkah'); return; } }
+      if (f.sched.k === 'days' && !f.sched.days.length) { toast('Pilih minimal satu hari'); return; }
+      if (f.sched.k === 'dates' && !f.sched.dates.length) { toast('Pilih minimal satu tanggal'); return; }
+      if (f.type === 'check') { f.goal = 1; f.limit = false; }
+      if (ex) { Object.assign(ex, f); toast('Kebiasaan diperbarui'); }
+      else { f.id = uid(); f.created = hDate < today() ? hDate : today(); S.habits.push(f); toast(`${f.icon} ${f.name} ditambahkan`); }
+      save(); closeSheet(); renderHabits();
+    };
+  };
+  openSheet(''); draw();
+}
+$('#btnAddHabit').onclick = () => openHabitEditor(null);
+
+/* ---- Jon AI: perintah kebiasaan ---- */
+const HICON_KW = [['quran','📿'],['ngaji','📿'],['mengaji','📿'],['dzikir','📿'],['game','🎮'],['minum','💧'],['air','💧'],['olahraga','💪'],['gym','💪'],['push','💪'],['lari','🏃'],['jogging','🏃'],['baca','📖'],['buku','📖'],['meditasi','🧘'],['yoga','🧘'],
+  ['sholat','🕌'],['shalat','🕌'],['salat','🕌'],['ngaji','📿'],['quran','📿'],['dzikir','📿'],['tidur','😴'],['belajar','🎓'],['kuliah','🎓'],['skripsi','🎓'],['jalan','🚶'],['langkah','🚶'],
+  ['sepeda','🚴'],['renang','🏊'],['rokok','🚭'],['sosmed','📵'],['media sosial','📵'],['tiktok','📵'],['instagram','📵'],['hp','📵'],['nabung','💰'],['tabung','💰'],['jurnal','✍️'],['menulis','✍️'],
+  ['sayur','🥗'],['buah','🍎'],['vitamin','💊'],['obat','💊'],['gigi','🦷'],['bangun','🌅'],['bersih','🧹'],['beres','🧹'],['coding','💻'],['inggris','🗣️'],['bahasa','🗣️'],['gitar','🎸']];
+function guessHabitIcon(name) { const n = name.toLowerCase(); return (HICON_KW.find(([k]) => n.includes(k)) || [0, '⭐'])[1]; }
+function matchHabit(text) {
+  let best = null, bs = 0;
+  for (const h of hActive()) {
+    const nm = h.name.toLowerCase(); let s = 0;
+    if (text.includes(nm)) s = 100 + nm.length;
+    else for (const w of nm.split(/\s+/)) if (w.length > 2 && new RegExp('\\b' + escRe(w)).test(text)) s += w.length;
+    if (s > bs) { bs = s; best = h; }
+  }
+  return bs >= 3 ? best : null;
+}
+function matchStep(text) {
+  for (const h of hActive()) if (h.type === 'list') for (const s of h.steps || []) if (s.name.length > 2 && new RegExp('\\b' + escRe(s.name.toLowerCase()) + '\\b').test(text)) return {h, s};
+  return null;
+}
+function habitStatus(d) {
+  const hs = hActive().filter(h => hSched(h, d));
+  if (!hs.length) return S.habits.length ? `Tidak ada kebiasaan terjadwal ${fmtDateRel(d)}.` : 'Kamu belum punya kebiasaan. Coba: “tambah kebiasaan minum air 8 gelas”.';
+  const {done, total} = hDayProg(d);
+  return `Kebiasaan ${fmtDateRel(d)} — ${done}/${total} selesai:\n` + hs.map(h => `${hFailed(h, d) ? '❌' : hDone(h, d) ? '✅' : '⬜'} ${h.icon} ${h.name} — ${hValTxt(h, d) || 'dalam batas'}${hStreak(h) ? ' · 🔥' + hStreak(h) : ''}`).join('\n');
+}
+function addHabitFromText(text) {
+  let t = ' ' + text + ' ';
+  const map = {minggu: 0, ahad: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, "jum'at": 5, sabtu: 6};
+  let sched = {k: 'daily', days: [1,2,3,4,5], dates: [1]};
+  if (/\bhari kerja\b/.test(t)) { sched.k = 'days'; sched.days = [1,2,3,4,5]; t = t.replace(/\bhari kerja\b/, ' '); }
+  else if (/\b(akhir pekan|weekend)\b/.test(t)) { sched.k = 'days'; sched.days = [0,6]; t = t.replace(/\b(akhir pekan|weekend)\b/, ' '); }
+  else { const ds = [...t.matchAll(/\b(senin|selasa|rabu|kamis|jumat|jum'at|sabtu|minggu|ahad)\b/g)]; if (ds.length) { sched.k = 'days'; sched.days = [...new Set(ds.map(m => map[m[1]]))]; t = t.replace(/\b(senin|selasa|rabu|kamis|jumat|jum'at|sabtu|minggu|ahad)\b/g, ' '); } }
+  let remindAt = '';
+  const rm = t.match(/\b(?:ingatkan|pengingat|ingetin)\s*(?:aku|saya)?\s*(?:jam|pukul)?\s*(\d{1,2})(?:[:.](\d{2}))?\s*(pagi|siang|sore|malam)?/);
+  if (rm) { const m = toMin(rm[1], rm[2], rm[3]); if (m != null && m < 1440) remindAt = fmtMin(m); t = t.replace(rm[0], ' '); }
+  const limit = /\b(batasi|batas|maksimal|maks|max|kurangi|kurang dari|paling lama)\b/.test(t);
+  t = t.replace(/\b(tambah|tambahkan|buat|buatkan|bikin|mulai|baru|kebiasaan|habit|tolong|dong|aku|saya|mau|ingin|pengen|yang|setiap|tiap|harian|sehari|per|hari|batasi|batas|maksimal|maks|max|kurangi|kurang dari|paling lama|selama|untuk|target)\b/g, ' ');
+  let type = 'check', goal = 1, unit = '', m;
+  if ((m = t.match(/\b(\d+(?:[.,]\d+)?)\s*(jam|menit|mnt)\b/))) { type = 'timer'; goal = parseFloat(m[1].replace(',', '.')) * (m[2] === 'jam' ? 60 : 1); t = t.replace(m[0], ' '); }
+  else if ((m = t.match(/\b(\d+(?:[.,]\d+)?)\s*([a-z]+)?/))) { type = 'count'; goal = parseFloat(m[1].replace(',', '.')); unit = m[2] ? (/^(kali|x)$/.test(m[2]) ? 'kali' : m[2]) : ''; t = t.replace(m[0], ' '); }
+  let name = t.replace(/[,.;:!?]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!name) return {handled: true, text: 'Nama kebiasaannya apa? Contoh: “tambah kebiasaan minum air 8 gelas setiap hari”.'};
+  name = name.charAt(0).toUpperCase() + name.slice(1);
+  if (hActive().some(h => h.name.toLowerCase() === name.toLowerCase())) return {handled: true, text: `Kebiasaan “${name}” sudah ada.`};
+  const tpl = HTEMPLATES.find(x => name.toLowerCase().includes(x.name.toLowerCase().split(' ')[0]));
+  const k = snap(), gi = guessHabitIcon(name);
+  const h = {id: uid(), name, icon: gi !== '⭐' ? gi : (tpl?.icon || gi), color: tpl?.color || HCOLORS[(S.habits.length + 6) % HCOLORS.length], type, goal, unit, limit: limit && type !== 'check',
+    steps: [], sched, group: tpl?.group || '', remindAt, chart: 'grid', created: today()};
+  if (type === 'check' && tpl?.type === 'list') { h.type = 'list'; h.steps = tpl.steps.map(n => ({id: uid(), name: n})); }
+  S.habits.push(h); save(); renderAll();
+  return {handled: true, undoK: k, gotoH: true, text: `✅ Kebiasaan baru: ${h.icon} **${h.name}**\nTarget: ${goalTxt(h)}\nJadwal: ${schedTxt(h)}${remindAt ? '\nPengingat: ' + remindAt : ''}`};
+}
+function habitAI(text) {
+  const has = re => re.test(text);
+  const ex = extractDate(text), d = ex.explicit ? ex.date : today();
+  const R = (txt, extra = {}) => ({handled: true, text: txt, ...extra});
+  if (has(/\b(kebiasaan|habit|habits|streak|beruntun)\b/)) {
+    const isStatus = has(/\b(progres|progress|status|cek|lihat|apa saja|gimana|bagaimana|rekap|daftar|list)\b/) || /^\s*(kebiasaan|habit|habits)(\s+(hari ini|besok|kemarin|lusa|saya|aku|ku))?\s*$/.test(text);
+    const isAdd = has(/\b(tambah|tambahkan|buat|buatkan|bikin|mulai)\b/) || (!isStatus && !has(/\b(hapus|buang|hilangkan|streak|beruntun)\b/) && (has(/\d/) || has(/\b(senin|selasa|rabu|kamis|jumat|sabtu|minggu|setiap|tiap|batasi|maksimal|kurangi|ingatkan)\b/)));
+    if (isAdd) return addHabitFromText(text);
+    if (has(/\b(hapus|buang|hilangkan)\b/)) {
+      const h = matchHabit(text.replace(/\b(hapus|buang|hilangkan|kebiasaan|habit)\b/g, ' '));
+      if (!h) return R('Kebiasaan mana yang mau dihapus? Sebutkan namanya, mis. “hapus kebiasaan meditasi”.');
+      const k = snap(); S.habits = S.habits.filter(x => x.id !== h.id); save(); renderAll();
+      return R(`🗑️ Kebiasaan ${h.icon} ${h.name} dihapus.`, {undoK: k});
+    }
+    if (has(/\b(streak|beruntun)\b/)) {
+      const l = hActive().map(h => [h, hStreak(h), hBest(h)]).sort((a, b) => b[1] - a[1]);
+      if (!l.length) return R('Belum ada kebiasaan.');
+      return R('🔥 Streak kebiasaanmu:\n' + l.map(([h, s, b]) => `${h.icon} ${h.name}: ${s} hari (terbaik ${b})`).join('\n'));
+    }
+    return R(habitStatus(d), {gotoH: true});
+  }
+  if (has(/\bgagal\b/)) { const h = matchHabit(text); if (h) { const k = snap(); hSet(d, h.id, {failed: true}); save(); renderAll(); return R(`❌ ${h.icon} ${h.name} ditandai gagal ${fmtDateRel(d)}. Tidak apa-apa — mulai lagi besok 💪`, {undoK: k}); } }
+  const logVerb = has(/\b(sudah|udah|telah|selesai|beres|centang|tandai|done|abis|habis)\b/) || /\+\s*\d/.test(text);
+  if (!logVerb) return null;
+  const ms = matchStep(text);
+  if (ms) {
+    const k = snap(), cur = new Set(hLog(d, ms.h.id)?.steps || []); cur.add(ms.s.id); hSet(d, ms.h.id, {steps: [...cur]}); save(); renderAll();
+    return R(`✅ ${ms.h.icon} ${ms.h.name}: ${ms.s.name} dicentang (${hValTxt(ms.h, d)})${hDone(ms.h, d) ? ' 🎉 Semua langkah selesai!' : ''}`, {undoK: k});
+  }
+  const h = matchHabit(text); if (!h) return null;
+  const k = snap(), cur = hLog(d, h.id)?.v || 0;
+  if (h.type === 'check') hSet(d, h.id, {v: 1, failed: false});
+  else if (h.type === 'list') hSet(d, h.id, {steps: h.steps.map(s => s.id), failed: false});
+  else {
+    let add = null, m;
+    if (h.type === 'timer' && (m = text.match(/(\d+(?:[.,]\d+)?)\s*(jam|menit|mnt)\b/))) add = parseFloat(m[1].replace(',', '.')) * (m[2] === 'jam' ? 60 : 1);
+    else if ((m = text.match(/(\d+(?:[.,]\d+)?)/))) add = parseFloat(m[1].replace(',', '.'));
+    if (add == null) hSet(d, h.id, {v: h.limit ? cur : Math.max(cur, hGoal(h)), failed: false});
+    else hSet(d, h.id, {v: Math.round((cur + add) * 100) / 100, failed: false});
+  }
+  save(); renderAll();
+  const over = h.limit && hVal(h, d) > hGoal(h);
+  return R(`✅ ${h.icon} ${h.name}: ${hValTxt(h, d)}${h.limit ? (over ? ' ⚠️ lewat batas!' : ' (dalam batas)') : hDone(h, d) ? ' 🎉 Target tercapai!' : ''}${hStreak(h) > 1 ? ` · 🔥 ${hStreak(h)} hari` : ''}`, {undoK: k});
+}
+
+/* ---- Statistik kebiasaan ---- */
+function habitStatsHtml() {
+  const act = hActive(); if (!act.length) return '';
+  const ws = weekStart(viewDate), ds = Array.from({length: 7}, (_, i) => addDays(ws, i)), t = today();
+  const pcts = ds.map(d => { if (d > t) return null; const {done, total} = hDayProg(d); return total ? done / total : null; });
+  const valid = pcts.filter(x => x != null), avg = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : 0;
+  const rows = act.map(h => [h, hRate(h, 7, ds[6] > t ? t : ds[6]), hStreak(h)]).sort((a, b) => (b[1] ?? -1) - (a[1] ?? -1));
+  const best = rows.find(r => r[1] != null);
+  return `<div class="card glass"><h3>Rekap kebiasaan minggu ini</h3>
+    <div class="kpis" style="margin-bottom:12px"><div class="kpi"><b>${Math.round(avg * 100)}%</b><span>rata-rata tuntas</span></div><div class="kpi"><b>🔥 ${Math.max(0, ...act.map(h => hStreak(h)))}</b><span>streak tertinggi</span></div><div class="kpi"><b>${act.length}</b><span>kebiasaan aktif</span></div></div>
+    <div class="hbar7">${ds.map((d, i) => `<div class="col"><div class="tr"><i style="height:${(pcts[i] || 0) * 100}%"></i></div><span class="lb" style="${d === t ? 'color:var(--accent)' : ''}">${HARI_S[parseYmd(d).getDay()]}</span></div>`).join('')}</div>
+    <div style="margin-top:12px">${rows.map(([h, r, s]) => `<div class="hrate"><span class="ic" style="background:color-mix(in srgb,${h.color} 22%,transparent)">${esc(h.icon)}</span><span class="nm">${esc(h.name)}</span><span class="tr"><i style="width:${(r || 0) * 100}%;background:${h.color}"></i></span><span class="v">${r == null ? '–' : Math.round(r * 100) + '%'}${s ? ' · 🔥' + s : ''}</span></div>`).join('')}</div>
+    ${best && best[1] >= .8 ? `<div class="small" style="margin-top:10px">⭐ Paling konsisten: ${esc(best[0].icon)} ${esc(best[0].name)}. Pertahankan!</div>` : ''}</div>`;
+}
+
+/* ---- pengingat kebiasaan ---- */
+function checkHabitReminders() {
+  const d = today(), m = nowMin();
+  for (const h of hActive()) {
+    if (!h.remindAt || !hSched(h, d) || hDone(h, d) && !h.limit || hFailed(h, d)) continue;
+    const [hh, mm] = h.remindAt.split(':').map(Number), at = hh * 60 + mm, k = `${d}|h|${h.id}`;
+    if (S.notified[k] || m < at || m > at + 10) continue;
+    S.notified[k] = 1; save();
+    notify(`${h.icon} Waktunya: ${h.name}`, hValTxt(h, d) || goalTxt(h));
+  }
+}
+
+/* =========================================================
+   KALENDER & ALARM iPHONE
+   1) Pintasan (Shortcuts): DailyJon mengirim baris perintah ke pintasan
+      "DailyJon Sinkron" yang membuat/menghapus acara Kalender + alarm Jam.
+      Format baris:  TAMBAH|id|judul|YYYY-MM-DD HH:MM|YYYY-MM-DD HH:MM|HH:MM(alarm, boleh kosong)
+                     HAPUS|id
+   2) File .ics: dibuka iOS → "Tambahkan Semua" ke Kalender (tanpa setup).
+   ========================================================= */
+let daysDirty = false, syncT = null;
+const SYNC_DAYS = 60;
+const scClean = s => String(s || '').replace(/[|\r\n]+/g, ' ').trim().slice(0, 80);
+const dtTxt = (d, m) => `${d} ${fmtMin(Math.min(m, 1439))}`; // 24:00 → 23:59
+function wantAlarm(b, date) {
+  if (!S.settings.scAlarm || b.alarm === false) return false;
+  const st = parseYmd(date); st.setMinutes(b.start - (+S.settings.remindBefore || 0));
+  const diff = st - Date.now();
+  return diff > 0 && diff <= 24 * 3600e3; // alarm iPhone hanya tahu jam, jadi kirim untuk ≤24 jam ke depan
+}
+function alarmTime(b) { return fmtMin(((b.start - (+S.settings.remindBefore || 0)) % 1440 + 1440) % 1440); }
+function syncPlan(forceAll) {
+  const t = today(), cur = {}, lines = [];
+  for (let i = 0; i <= SYNC_DAYS; i++) {
+    const d = addDays(t, i);
+    for (const b of getDay(d)) {
+      if (d === t && b.end <= nowMin()) continue;
+      const al = wantAlarm(b, d);
+      const hash = [d, b.start, b.end, b.title, al ? alarmTime(b) : ''].join('~');
+      cur[b.id] = {d, hash};
+      const old = S.synced[b.id];
+      if (forceAll || !old || old.hash !== hash) lines.push(['TAMBAH', b.id, scClean(b.title), dtTxt(d, b.start), dtTxt(d, b.end), al ? alarmTime(b) : ''].join('|'));
+    }
+  }
+  for (const [id, o] of Object.entries(S.synced)) if (!cur[id] && o.d >= t) lines.push(`HAPUS|${id}`);
+  return {lines, cur};
+}
+function runShortcut(lines) {
+  const name = S.settings.scName || 'DailyJon Sinkron';
+  location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(name)}&input=text&text=${encodeURIComponent(lines.join('\n'))}`;
+}
+function syncNow(forceAll, quiet) {
+  if (S.settings.scMode === 'off') { if (!quiet) openCalSheet(); return; }
+  const {lines, cur} = syncPlan(forceAll);
+  if (!lines.length) { if (!quiet) toast('Kalender iPhone sudah sinkron ✅'); return; }
+  // simpan status lama (yang sudah lewat) + status baru
+  const keep = {}; for (const [id, o] of Object.entries(S.synced)) if (o.d < today()) keep[id] = o;
+  S.synced = {...keep, ...cur}; saveNow();
+  toast(`📲 Mengirim ${lines.length} perubahan ke Kalender${S.settings.scAlarm ? ' & Alarm' : ''}…`);
+  setTimeout(() => runShortcut(lines), 350);
+}
+function markDaysDirty() {
+  daysDirty = true;
+  if (S.settings.scMode === 'auto') { clearTimeout(syncT); syncT = setTimeout(() => { if (daysDirty) { daysDirty = false; syncNow(false, true); } }, 1800); }
+}
+function pendingSyncCount() { return S.settings.scMode === 'off' ? 0 : syncPlan(false).lines.length; }
+
+/* ---- .ics ---- */
+const icsEsc = s => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const icsDT = (d, m) => { const dt = parseYmd(d); dt.setMinutes(m); return `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`; };
+const icsStamp = () => new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+function icsWrap(events) {
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//DailyJon//ID', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:DailyJon', ...events, 'END:VCALENDAR'].join('\r\n');
+}
+function icsAlarm(min, title) { return ['BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc(title)}`, `TRIGGER:-PT${Math.max(0, min)}M`, 'END:VALARM']; }
+function icsBlock(d, b) {
+  return ['BEGIN:VEVENT', `UID:${b.id}-${d}@dailyjon`, `DTSTAMP:${icsStamp()}`, `DTSTART:${icsDT(d, b.start)}`, `DTEND:${icsDT(d, b.end)}`,
+    `SUMMARY:${icsEsc(b.title)}`, `DESCRIPTION:${icsEsc((b.note ? b.note + '\n' : '') + 'Dari DailyJon · ' + catOf(b.cat).name)}`,
+    ...icsAlarm(+S.settings.remindBefore || 0, b.title), 'END:VEVENT'];
+}
+function icsHabit(h) {
+  if (!h.remindAt) return [];
+  const [hh, mm] = h.remindAt.split(':').map(Number), m = hh * 60 + mm, s = h.sched || {k: 'daily'};
+  const BY = ['SU','MO','TU','WE','TH','FR','SA'];
+  let rr = 'RRULE:FREQ=DAILY';
+  if (s.k === 'days') rr = `RRULE:FREQ=WEEKLY;BYDAY=${(s.days || []).map(x => BY[x]).join(',')}`;
+  if (s.k === 'dates') rr = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${(s.dates || []).join(',')}`;
+  let start = h.created > today() ? h.created : today();
+  for (let i = 0; i < 62 && !hSched(h, start); i++) start = addDays(start, 1); // DTSTART harus jatuh di hari yang terjadwal
+  return ['BEGIN:VEVENT', `UID:habit-${h.id}@dailyjon`, `DTSTAMP:${icsStamp()}`, `DTSTART:${icsDT(start, m)}`, `DTEND:${icsDT(start, Math.min(1439, m + 15))}`, rr,
+    `SUMMARY:${icsEsc(h.icon + ' ' + h.name)}`, `DESCRIPTION:${icsEsc('Kebiasaan DailyJon · ' + goalTxt(h))}`, ...icsAlarm(0, h.name), 'END:VEVENT'];
+}
+function openICS(text, name) {
+  const file = new File([text], name, {type: 'text/calendar'});
+  const url = URL.createObjectURL(file);
+  // iPhone membuka file .ics dengan pratinjau Kalender → "Tambahkan Semua"
+  const w = window.open(url, '_blank');
+  if (!w) { const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+function exportICS(kind) {
+  const t = today(); let ev = [], n = 0, name = 'dailyjon.ics';
+  if (kind === 'day' || kind === 'week') {
+    const days = kind === 'day' ? [viewDate] : Array.from({length: 7}, (_, i) => addDays(t, i));
+    for (const d of days) for (const b of getDay(d)) { if (d === t && b.end <= nowMin()) continue; ev.push(...icsBlock(d, b)); n++; }
+    name = kind === 'day' ? `dailyjon-${viewDate}.ics` : `dailyjon-7hari.ics`;
+  } else if (kind === 'habits') {
+    for (const h of hActive()) { const e = icsHabit(h); if (e.length) { ev.push(...e); n++; } }
+    name = 'dailyjon-kebiasaan.ics';
+    if (!n) { toast('Belum ada kebiasaan dengan jam pengingat. Atur di Edit kebiasaan → Pengingat.'); return; }
+  }
+  if (!n) { toast('Tidak ada kegiatan untuk dikirim'); return; }
+  openICS(icsWrap(ev), name);
+  toast(`📅 ${n} acara siap — ketuk “Tambahkan Semua” di layar Kalender`, {ms: 5000});
+}
+function exportBlockICS(d, b) { openICS(icsWrap(icsBlock(d, b)), `dailyjon-${scClean(b.title).replace(/\s+/g, '-').toLowerCase() || 'acara'}.ics`); }
+function exportHabitICS(h) { const e = icsHabit(h); if (!e.length) { toast('Atur jam pengingat kebiasaan ini dulu (Edit → Pengingat)'); return; } openICS(icsWrap(e), `dailyjon-${h.name.replace(/\s+/g, '-').toLowerCase()}.ics`); }
+
+/* ---- sheet Kalender & Alarm ---- */
+function openCalSheet() {
+  const st = S.settings, n = pendingSyncCount();
+  openSheet(`<div class="sh-head"><b>📲 Kalender & Alarm iPhone</b></div>
+    <div class="small" style="margin-bottom:6px">${st.scMode === 'off' ? 'Sinkron Pintasan belum aktif. Ikuti panduan sekali saja, lalu jadwalmu otomatis masuk Kalender & Alarm iPhone.' : `Mode: <b>${st.scMode === 'auto' ? 'Otomatis' : 'Manual'}</b> · ${n ? n + ' perubahan belum dikirim' : 'semua sudah terkirim ✅'}`}</div>
+    ${st.scMode !== 'off' ? '<button class="menu-item" data-c="sync">📲 Kirim perubahan ke Kalender & Alarm</button>' : '<button class="menu-item" data-c="guide">🛠️ Panduan menyiapkan Pintasan (sekali saja)</button>'}
+    <button class="menu-item" data-c="day">📅 Tambah jadwal ${viewDate === today() ? 'hari ini' : esc(fmtDate(viewDate))} ke Kalender (.ics)</button>
+    <button class="menu-item" data-c="week">🗓️ Tambah jadwal 7 hari ke depan ke Kalender (.ics)</button>
+    <button class="menu-item" data-c="habits">🔁 Pengingat kebiasaan → Kalender (berulang)</button>
+    <button class="menu-item" data-c="set">⚙️ Setelan Kalender & Alarm</button>`);
+  $$('#sheetBody [data-c]').forEach(b => b.onclick = () => {
+    const c = b.dataset.c; closeSheet();
+    if (c === 'sync') syncNow(false);
+    if (c === 'guide') setTimeout(openShortcutGuide, 300);
+    if (c === 'day' || c === 'week' || c === 'habits') exportICS(c);
+    if (c === 'set') { show('set'); setTimeout(() => $('#calCard')?.scrollIntoView({block: 'start'}), 80); }
+  });
+}
+function openShortcutGuide() {
+  const nm = esc(S.settings.scName || 'DailyJon Sinkron');
+  const st = (n, t) => `<div class="list-item" style="align-items:flex-start;justify-content:flex-start"><b style="min-width:26px;color:var(--accent)">${n}</b><div style="flex:1;line-height:1.45">${t}</div></div>`;
+  openSheet(`<div class="sh-head"><b>🛠️ Pintasan “${nm}”</b><span>±5 menit, sekali saja</span></div>
+    <div class="small" style="margin-bottom:8px">Buka app <b>Pintasan</b> (Shortcuts) di iPhone. Nama aksi bisa dicari di kolom “Cari Aksi”. Nama Inggris ditulis dalam kurung.</div>
+    ${st(1, `Ketuk <b>+</b> → ganti nama pintasan jadi <b>${nm}</b> (harus sama persis).`)}
+    ${st(2, `Ketuk ikon <b>ⓘ</b> (Detail) → nyalakan <b>Tampilkan di Lembar Berbagi</b> (Show in Share Sheet), lalu atur jenis input yang diterima ke <b>Teks</b> saja. Kembali, lalu tambah aksi <b>Pisahkan Teks</b> (Split Text): teks = <b>Input Pintasan</b>, pisahkan dengan <b>Baris Baru</b>.`)}
+    ${st(3, `Tambah <b>Ulangi dengan Setiap</b> (Repeat with Each) → item di <b>Teks Terpisah</b>.`)}
+    ${st(4, `Di dalam Ulangi: <b>Pisahkan Teks</b> → teks: <b>Item Ulangan</b>, pisahkan dengan <b>Kustom</b> → ketik <b>|</b>`)}
+    ${st(5, `Buat 6 pasang aksi <b>Dapatkan Item dari Daftar</b> (Get Item from List) → <b>Item di Indeks</b> 1…6 (input: Teks Terpisah dari langkah 4), masing-masing diikuti <b>Atur Variabel</b> (Set Variable) bernama:<br><b>1 = Aksi · 2 = ID · 3 = Judul · 4 = Mulai · 5 = Selesai · 6 = Alarm</b>`)}
+    ${st(6, `Tambah <b>Cari Acara Kalender</b> (Find Calendar Events) → <b>Tambah Filter</b>: <b>Catatan</b> <b>berisi</b> variabel <b>ID</b>. Lalu <b>Hapus Acara</b> (Remove Events) → matikan <b>Konfirmasi Sebelum Menghapus</b>. <span class="muted">(Ini supaya acara yang diubah/dihapus di DailyJon ikut terhapus.)</span>`)}
+    ${st(7, `Tambah <b>Jika</b> (If): <b>Aksi</b> <b>adalah</b> <b>TAMBAH</b>.`)}
+    ${st(8, `Di dalam Jika: <b>Tambahkan Acara Kalender Baru</b> (Add New Event) → Judul: <b>Judul</b>, Mulai: <b>Mulai</b>, Selesai: <b>Selesai</b>. Buka “Tampilkan Selengkapnya”: Catatan: <b>DailyJon ID</b> (ketik “DailyJon ” lalu sisipkan variabel ID), Peringatan: <b>${+S.settings.remindBefore ? S.settings.remindBefore + ' menit sebelumnya' : 'Saat acara'}</b>.`)}
+    ${st(9, `Masih di dalam Jika: tambah <b>Jika</b> kedua: <b>Alarm</b> <b>memiliki nilai apa pun</b> → di dalamnya <b>Buat Alarm</b> (Create Alarm): Waktu: <b>Alarm</b>, Label: <b>Judul</b>.`)}
+    ${st(10, `Ketuk <b>Selesai</b>. Kembali ke DailyJon → Setelan → Kalender & Alarm → pilih mode <b>Otomatis</b> → ketuk <b>Uji pintasan</b>. Saat iPhone bertanya izin Kalender & Alarm, pilih <b>Izinkan</b> / <b>Selalu Izinkan</b>.`)}
+    <div class="small" style="margin-top:10px">ℹ️ Alarm iPhone hanya menyimpan jam (tanpa tanggal), jadi DailyJon memasang alarm untuk kegiatan ≤24 jam ke depan. Kegiatan yang lebih jauh tetap masuk Kalender dengan peringatan, lalu alarmnya terpasang otomatis saat kamu membuka DailyJon di hari sebelumnya.</div>
+    <div class="btn-row"><button class="btn" id="gClose">Tutup</button><button class="btn pri" id="gOpen">Buka app Pintasan</button></div>`);
+  $('#gClose').onclick = closeSheet;
+  $('#gOpen').onclick = () => { location.href = 'shortcuts://create-shortcut'; };
+}
+function calSettingsHtml() {
+  const st = S.settings;
+  return `<div class="card glass" id="calCard"><h3>📲 Kalender & Alarm iPhone</h3>
+    <div class="set-row"><div class="lbl">Sinkron via Pintasan<small>Kegiatan masuk Kalender + alarm Jam iPhone</small></div><select id="scMode"><option value="off">Mati</option><option value="manual">Manual</option><option value="auto">Otomatis</option></select></div>
+    <div class="set-row"><div class="lbl">Pasang alarm Jam juga<small>Untuk kegiatan ≤24 jam ke depan (berbunyi ${+st.remindBefore ? st.remindBefore + ' mnt sebelum' : 'saat'} mulai)</small></div><label class="tg"><input type="checkbox" id="scAlarm"${st.scAlarm ? ' checked' : ''}><span></span></label></div>
+    <div class="set-row"><div class="lbl">Nama pintasan</div><input id="scName" value="${esc(st.scName || 'DailyJon Sinkron')}" style="background:var(--cell);border:0;border-radius:11px;padding:7px 10px;width:170px;font-size:14px"></div>
+    <div class="btn-row"><button class="btn" id="scGuide">Panduan pintasan</button><button class="btn" id="scTest">Uji pintasan</button></div>
+    <div class="btn-row"><button class="btn pri" id="scSync">Kirim sekarang</button><button class="btn" id="scAll">Kirim ulang semua</button></div>
+    <div class="sec-lbl">Tanpa setup (file kalender)</div>
+    <div class="btn-row" style="margin-top:0"><button class="btn" id="icsWeek">Jadwal 7 hari → Kalender</button><button class="btn" id="icsHab">Kebiasaan → Kalender</button></div>
+    <div class="small" style="margin-top:8px">Mode Otomatis membuka app Pintasan sebentar setiap kali jadwal berubah, lalu kamu bisa kembali ke DailyJon. Mode Manual: kirim lewat tombol 📲 di menu ⋯ Jadwal.</div></div>`;
+}
+function bindCalSettings() {
+  const st = S.settings;
+  $('#scMode').value = st.scMode || 'off';
+  $('#scMode').onchange = e => { st.scMode = e.target.value; save(); if (st.scMode !== 'off' && !st.scGuided) { st.scGuided = true; save(); openShortcutGuide(); } };
+  $('#scAlarm').onchange = e => { st.scAlarm = e.target.checked; save(); };
+  $('#scName').onchange = e => { st.scName = e.target.value.trim() || 'DailyJon Sinkron'; save(); };
+  $('#scGuide').onclick = openShortcutGuide;
+  $('#scTest').onclick = () => { toast('Membuka pintasan…'); setTimeout(() => runShortcut(['HAPUS|tes-dailyjon']), 300); };
+  $('#scSync').onclick = () => { if (st.scMode === 'off') { st.scMode = 'manual'; save(); renderSettings(); } syncNow(false); };
+  $('#scAll').onclick = () => { if (st.scMode === 'off') { st.scMode = 'manual'; save(); renderSettings(); } syncNow(true); };
+  $('#icsWeek').onclick = () => exportICS('week');
+  $('#icsHab').onclick = () => exportICS('habits');
+}
+// saat app dibuka: kegiatan yang kini ≤24 jam lagi butuh alarm → kirim (mode otomatis), atau beri tahu (manual)
+function syncOnOpen() {
+  if (S.settings.scMode === 'off') return;
+  const n = pendingSyncCount(); if (!n) return;
+  toast(`📲 ${n} perubahan jadwal belum masuk Kalender/Alarm`, {action: {label: 'Kirim', fn: () => syncNow(false)}, ms: 6000});
+}
+
+/* =========================================================
+   NOTIFIKASI PUSH (muncul walau DailyJon tertutup)
+   Butuh server push gratis (Cloudflare Worker "DailyJon Push").
+   ========================================================= */
+const ub64u = s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+const pushUrl = () => (S.settings.pushUrl || '').replace(/\/+$/, '');
+const pushOn = () => !!(S.settings.pushOn && pushUrl());
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const isStandalone = () => navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+let pushT = null, pushLastHash = null;
+async function pushApi(path, body) {
+  const r = await fetch(pushUrl() + path, body ? {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
+  return j;
+}
+function pushToken() {
+  if (!S.settings.pushToken) { const a = new Uint8Array(24); crypto.getRandomValues(a); S.settings.pushToken = [...a].map(x => x.toString(16).padStart(2, '0')).join(''); saveNow(); }
+  return S.settings.pushToken;
+}
+function pushItems() {
+  const now = Date.now(), items = [], t0 = today(), rb = +S.settings.remindBefore || 0;
+  const at = (d, m) => { const x = parseYmd(d); x.setMinutes(m); return x.getTime(); };
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(t0, i), rel = i === 0 ? '' : i === 1 ? 'Besok · ' : '';
+    for (const b of getDay(d)) {
+      if (!b.remind) continue;
+      const t = at(d, b.start - rb);
+      if (t > now) items.push({t, title: `⏰ ${b.title}`, body: `${rel}${fmtMin(b.start)}–${fmtMin(b.end)}${rb ? ` · mulai ${rb} menit lagi` : ' · mulai sekarang'}`, tag: `b-${b.id}`});
+    }
+    for (const h of hActive()) {
+      if (!h.remindAt || !hSched(h, d)) continue;
+      if (d === t0 && ((hDone(h, d) && !h.limit) || hFailed(h, d))) continue;
+      const [hh, mm] = h.remindAt.split(':').map(Number), t = at(d, hh * 60 + mm);
+      if (t > now) items.push({t, title: `${h.icon} ${h.name}`, body: h.limit ? `Ingat batasmu: ${goalTxt(h)}` : `Waktunya! Target: ${goalTxt(h)}${hStreak(h) ? ` · jaga streak 🔥${hStreak(h)}` : ''}`, tag: `h-${h.id}-${d}`});
+    }
+  }
+  if (S.timer && S.timer.paused == null && S.timer.endAt > now) items.push({t: S.timer.endAt, title: 'Waktu fokus selesai ✅', body: S.timer.label, tag: 'focus'});
+  const ht = S.htimer, hh = ht && hById(ht.hid);
+  if (hh) { const left = (hGoal(hh) - hVal(hh, ht.date)) * 60000; if (left > 0) items.push({t: now + left, title: hh.limit ? `Batas ${hh.name} tercapai ⚠️` : `Target tercapai: ${hh.name} 🎉`, body: goalTxt(hh), tag: 'htimer'}); }
+  return items.sort((a, b) => a.t - b.t).slice(0, 400);
+}
+function pushScheduleSoon() { if (!pushOn()) return; clearTimeout(pushT); pushT = setTimeout(pushSchedule, 2500); }
+async function pushSchedule(force) {
+  if (!pushOn()) return;
+  const items = pushItems();
+  const hash = JSON.stringify(items.map(i => [i.t, i.title, i.body]));
+  if (!force && hash === (pushLastHash ?? S.settings.pushHash)) return;
+  try { await pushApi('/schedule', {token: pushToken(), items}); pushLastHash = hash; S.settings.pushHash = hash; S.settings.pushSyncedAt = Date.now(); saveNow(); }
+  catch (e) { if (/belum terdaftar/.test(e.message)) { S.settings.pushOn = false; saveNow(); toast('Notifikasi perlu diaktifkan ulang di Setelan'); } }
+}
+async function pushConnect(url) {
+  S.settings.pushUrl = url.trim().replace(/\/+$/, ''); if (S.settings.pushUrl && !/^https:\/\//.test(S.settings.pushUrl)) S.settings.pushUrl = 'https://' + S.settings.pushUrl;
+  S.settings.pushKey = ''; saveNow();
+  if (!S.settings.pushUrl) return false;
+  try { const j = await pushApi('/vapid'); S.settings.pushKey = j.key; saveNow(); return true; }
+  catch (e) { toast('Server tidak bisa dihubungi: ' + e.message); return false; }
+}
+async function pushEnable() {
+  if (!pushSupported()) { toast(isStandalone() ? 'Perangkat ini belum mendukung notifikasi web (perlu iOS 16.4+)' : 'Buka DailyJon dari ikon di Layar Utama dulu, lalu aktifkan di sini'); return; }
+  if (!S.settings.pushKey) { toast('Hubungkan server push dulu'); return; }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: ub64u(S.settings.pushKey)}); // memunculkan izin notifikasi iPhone
+    await pushApi('/subscribe', {token: pushToken(), sub: sub.toJSON()});
+    S.settings.pushOn = true; saveNow();
+    await pushSchedule(true);
+    toast('🔔 Notifikasi aktif!'); renderSettings();
+  } catch (e) {
+    toast(Notification.permission === 'denied' ? 'Izin notifikasi ditolak — ubah di Pengaturan iPhone › Notifikasi › DailyJon' : 'Gagal mengaktifkan: ' + e.message, {ms: 6000});
+  }
+}
+async function pushDisable() {
+  try { await pushApi('/unsubscribe', {token: pushToken()}); } catch (e) {}
+  try { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch (e) {}
+  S.settings.pushOn = false; S.settings.pushHash = ''; pushLastHash = null; saveNow(); renderSettings(); toast('Notifikasi dimatikan');
+}
+function pushSettingsHtml() {
+  const st = S.settings, sup = pushSupported(), sa = isStandalone();
+  const perm = 'Notification' in window ? Notification.permission : 'unsupported';
+  const status = st.pushOn ? `<span style="color:var(--ok);font-weight:700">Aktif ✅</span>${st.pushSyncedAt ? ` · jadwal terkirim ${new Date(st.pushSyncedAt).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}` : ''}`
+    : !sa ? 'Buka DailyJon dari ikon Layar Utama untuk mengaktifkan' : !sup ? 'Perlu iOS 16.4 atau lebih baru' : perm === 'denied' ? 'Izin ditolak — ubah di Pengaturan iPhone' : 'Belum aktif';
+  return `<div class="card glass" id="pushCard"><h3>🔔 Notifikasi di iPhone</h3>
+    <div class="small" style="margin-bottom:6px">Pengingat kegiatan, kebiasaan & timer muncul di layar kunci walau DailyJon ditutup. Status: ${status}</div>
+    <div class="set-row"><div class="lbl">Server push<small>${st.pushKey ? 'Terhubung ✅' : 'Alamat Cloudflare Worker milikmu'}</small></div></div>
+    <div class="nrow"><input class="fld" id="pushUrlIn" placeholder="https://dailyjon-push.namakamu.workers.dev" value="${esc(st.pushUrl || '')}" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="btn" id="pushConn" style="flex:none;padding:13px 14px">Hubungkan</button></div>
+    <div class="btn-row">${st.pushOn ? '<button class="btn" id="pushTest">Kirim uji</button><button class="btn dan" id="pushOff">Matikan</button>' : `<button class="btn pri" id="pushEn"${st.pushKey ? '' : ' disabled style="opacity:.5"'}>Aktifkan notifikasi</button>`}</div>
+    <div class="btn-row"><button class="btn" id="pushGuide">📖 Panduan membuat server (gratis, ±10 menit)</button></div></div>`;
+}
+function bindPushSettings() {
+  $('#pushConn').onclick = async () => { const ok = await pushConnect($('#pushUrlIn').value); if (ok) toast('Server push terhubung ✅'); renderSettings(); };
+  if ($('#pushEn')) $('#pushEn').onclick = pushEnable;
+  if ($('#pushOff')) $('#pushOff').onclick = pushDisable;
+  if ($('#pushTest')) $('#pushTest').onclick = async () => { try { await pushApi('/test', {token: pushToken()}); toast('Notifikasi uji dikirim — cek layar kunci 🔔'); } catch (e) { toast('Gagal: ' + e.message); } };
+  $('#pushGuide').onclick = openPushGuide;
+}
+function openPushGuide() {
+  const st = (n, t) => `<div class="list-item" style="align-items:flex-start;justify-content:flex-start"><b style="min-width:26px;color:var(--accent)">${n}</b><div style="flex:1;line-height:1.45">${t}</div></div>`;
+  openSheet(`<div class="sh-head"><b>📖 Server notifikasi gratis</b><span>Cloudflare Workers</span></div>
+    <div class="small" style="margin-bottom:8px">Server ini hanya untuk DailyJon-mu, gratis, dan cukup dibuat sekali. File kodenya: <b>push-worker/worker.js</b> di folder DailyJon.</div>
+    ${st(1, 'Buka <b>dash.cloudflare.com</b> (login/daftar gratis) → <b>Workers & Pages</b> → <b>Create</b> → <b>Create Worker</b> (Hello World) → nama: <b>dailyjon-push</b> → <b>Deploy</b>.')}
+    ${st(2, 'Ketuk <b>Edit code</b> → hapus semua kode → tempel kode server → <b>Deploy</b>.<br><button class="chip on" id="pgCopy" style="margin-top:8px">📋 Salin kode server</button>')}
+    ${st(3, 'Menu <b>Storage & Databases</b> → <b>KV</b> → <b>Create</b> → nama: <b>DAILYJON_PUSH</b>.')}
+    ${st(4, 'Kembali ke worker <b>dailyjon-push</b> → <b>Settings</b> → <b>Bindings</b> → <b>Add</b> → <b>KV namespace</b> → Variable name: <b>KV</b> (huruf besar) → pilih <b>DAILYJON_PUSH</b> → <b>Deploy</b>.')}
+    ${st(5, 'Masih di <b>Settings</b> → <b>Trigger Events</b> (Triggers) → <b>Add</b> → <b>Cron Triggers</b> → isi <b>* * * * *</b> (setiap menit) → simpan.')}
+    ${st(6, 'Salin alamat worker (mis. <b>https://dailyjon-push.namakamu.workers.dev</b>) → tempel di kolom <b>Server push</b> → <b>Hubungkan</b>.')}
+    ${st(7, 'Ketuk <b>Aktifkan notifikasi</b> → pilih <b>Izinkan</b>. Lalu ketuk <b>Kirim uji</b> — notifikasi harus muncul dalam beberapa detik.')}
+    <div class="small" style="margin-top:10px">ℹ️ Notifikasi web di iPhone hanya berfungsi jika DailyJon dibuka dari ikon Layar Utama (bukan dari tab Safari). Jadwal notifikasi 7 hari ke depan dikirim ke server setiap kali jadwal/kebiasaan berubah; pengingat dikirim tepat waktu (±1 menit).</div>
+    <div class="btn-row"><button class="btn" id="pgClose">Tutup</button><button class="btn pri" id="pgOpen">Buka Cloudflare</button></div>`);
+  let code = null; fetch('push-worker/worker.js').then(r => r.ok ? r.text() : null).then(t => code = t).catch(() => {});
+  $('#pgCopy').onclick = async () => {
+    try { if (!code) code = await (await fetch('push-worker/worker.js')).text(); await navigator.clipboard.writeText(code); toast('Kode server disalin ✅ — tempel di editor Cloudflare'); }
+    catch (e) { toast('Gagal menyalin. Buka file push-worker/worker.js dari repo GitHub-mu lalu salin manual.', {ms: 6000}); }
+  };
+  $('#pgClose').onclick = closeSheet;
+  $('#pgOpen').onclick = () => window.open('https://dash.cloudflare.com/', '_blank');
+}
+
+/* =========================================================
+   VIEW: SETELAN
+   ========================================================= */
+function renderSettings() {
+  const st = S.settings, el = $('#view-set');
+  const gpu = !!navigator.gpu;
+  const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  el.innerHTML = `
+  <div class="card glass"><h3>Tampilan</h3>
+    <div class="set-row"><div class="lbl">Tema</div><select id="sTheme"><option value="auto">Otomatis</option><option value="light">Terang</option><option value="dark">Gelap</option></select></div>
+    <div class="set-row"><div class="lbl">Tab pembuka</div><select id="sStart"><option value="plan">Jadwal</option><option value="habits">Kebiasaan</option><option value="ai">Jon AI</option></select></div>
+    <div class="set-row"><div class="lbl">Sembunyikan warna<small>Grid tampil satu warna netral</small></div><label class="tg"><input type="checkbox" id="sMono"${st.mono ? ' checked' : ''}><span></span></label></div>
+    <div class="set-row"><div class="lbl">Jam aktif<small>Untuk waktu luang & saran AI</small></div><div style="white-space:nowrap"><select id="sDS">${Array.from({length: 13}, (_, i) => `<option value="${i}"${i === st.dayStart ? ' selected' : ''}>${pad(i)}:00</option>`).join('')}</select> – <select id="sDE">${Array.from({length: 12}, (_, i) => i + 13).map(i => `<option value="${i}"${i === st.dayEnd ? ' selected' : ''}>${pad(i)}:00</option>`).join('')}</select></div></div>
+  </div>
+  <div class="card glass"><h3>Pengingat</h3>
+    <div class="set-row"><div class="lbl">Ingatkan</div><select id="sRB">${[0, 5, 10, 15, 30].map(x => `<option value="${x}"${x === +st.remindBefore ? ' selected' : ''}>${x ? x + ' menit sebelum' : 'Saat mulai'}</option>`).join('')}</select></div>
+    <div class="set-row"><div class="lbl">Pengingat aktif untuk kegiatan baru</div><label class="tg"><input type="checkbox" id="sRD"${st.remindDefault ? ' checked' : ''}><span></span></label></div>
+    <div class="small" style="margin-top:6px">Untuk notifikasi di layar kunci saat DailyJon tertutup, aktifkan <b>🔔 Notifikasi di iPhone</b> di bawah.</div>
+  </div>
+  ${S.habits.some(h => h.archived) ? `<div class="card glass"><h3>Kebiasaan diarsipkan</h3>${S.habits.filter(h => h.archived).map(h => `<div class="list-item"><span>${esc(h.icon)} ${esc(h.name)}</span><button class="chip" data-unarc="${h.id}">Pulihkan</button></div>`).join('')}</div>` : ''}
+  <div class="card glass"><h3>Kategori jadwal</h3><div id="catList">${S.cats.map((c, i) => `<div class="cat-ed"><input type="color" value="${c.color}" data-i="${i}"><input type="text" value="${esc(c.name)}" data-i="${i}" maxlength="20"><button data-del="${i}" aria-label="Hapus">✕</button></div>`).join('')}</div>
+    <button class="btn" id="catAdd" style="width:100%;margin-top:6px">+ Tambah kategori</button></div>
+  <div class="card glass"><h3>Jon AI</h3>
+    <div class="small"><b>AI Lokal</b> selalu aktif & offline: menambah, memindah, menghapus kegiatan lewat chat, mencari waktu luang, menyusun rutinitas, dan statistik.<br><b>AI Pintar</b> (opsional) adalah model bahasa yang berjalan di dalam iPhone-mu (tanpa server, tanpa biaya). Unduh sekali, lalu bisa dipakai offline.</div>
+    <div class="set-row"><div class="lbl">Model AI Pintar</div><select id="sModel">${AI_MODELS.map(m => `<option value="${m.id}"${m.id === st.aiModel ? ' selected' : ''}>${m.name}</option>`).join('')}</select></div>
+    <div class="set-row"><div class="lbl">Muat otomatis saat dibuka</div><label class="tg"><input type="checkbox" id="sAuto"${st.aiAuto ? ' checked' : ''}><span></span></label></div>
+    <div class="small">WebGPU: ${gpu ? 'tersedia ✅' : 'tidak tersedia di browser ini ❌ (butuh iOS 26 / Safari terbaru)'}</div>
+    <button class="btn pri" id="sLoadAI" style="width:100%;margin-top:10px">${llm.engine ? 'AI Pintar aktif ✅' : llm.loading ? 'Memuat…' : 'Unduh & aktifkan AI Pintar'}</button>
+    <div class="prog" id="aiProg" ${llm.loading ? '' : 'hidden'}><i style="width:${llm.progress * 100}%"></i></div>
+    <div class="small" id="aiStat" style="margin-top:6px">${esc(llm.status)}</div>
+  </div>
+  ${pushSettingsHtml()}
+  ${calSettingsHtml()}
+  <div class="card glass"><h3>Data</h3>
+    <div class="small">Semua jadwal tersimpan hanya di perangkat ini. Buat cadangan secara berkala.</div>
+    <div class="btn-row"><button class="btn" id="dExp">Ekspor cadangan</button><button class="btn" id="dImp">Impor</button></div>
+    <div class="btn-row"><button class="btn dan" id="dChat">Hapus riwayat chat</button><button class="btn dan" id="dAll">Hapus semua data</button></div>
+  </div>
+  <div class="card glass"><h3>Pasang di iPhone</h3><div class="small">1. Buka DailyJon di <b>Safari</b>.<br>2. Ketuk tombol <b>Bagikan</b> (kotak dengan panah ke atas).<br>3. Pilih <b>Tambahkan ke Layar Utama</b> → <b>Tambah</b>.<br>4. Buka DailyJon dari ikon di Layar Utama — tampil layar penuh seperti aplikasi biasa.</div></div>
+  <div class="card glass small" style="text-align:center">DailyJon v${APP_VER} · gratis · tanpa iklan · data milikmu</div>`;
+  $('#sTheme').value = st.theme; $('#sStart').value = st.startTab || 'plan';
+  $('#sStart').onchange = e => { st.startTab = e.target.value; save(); };
+  $$('[data-unarc]').forEach(b => b.onclick = () => { const h = hById(b.dataset.unarc); if (h) { h.archived = false; save(); renderSettings(); toast('Kebiasaan dipulihkan'); } });
+  $('#sTheme').onchange = e => { st.theme = e.target.value; save(); applyTheme(); };
+  $('#sMono').onchange = e => { st.mono = e.target.checked; save(); applyTheme(); };
+  $('#sDS').onchange = e => { st.dayStart = +e.target.value; save(); renderBlocks(); };
+  $('#sDE').onchange = e => { st.dayEnd = +e.target.value; save(); renderBlocks(); };
+  $('#sRB').onchange = e => { st.remindBefore = +e.target.value; save(); };
+  $('#sRD').onchange = e => { st.remindDefault = e.target.checked; save(); };
+  if ($('#sNotif')) $('#sNotif').onclick = async () => {
+    if (!('Notification' in window)) { toast(standalone ? 'Notifikasi tidak didukung' : 'Pasang ke Layar Utama dulu (Bagikan → Tambahkan ke Layar Utama)'); return; }
+    try { const p = await Notification.requestPermission(); toast(p === 'granted' ? 'Notifikasi diizinkan ✅' : 'Notifikasi tidak diizinkan'); } catch (e) {}
+    renderSettings();
+  };
+  $$('#catList input[type=color]').forEach(i => i.onchange = () => { S.cats[+i.dataset.i].color = i.value; save(); renderBlocks(); });
+  $$('#catList input[type=text]').forEach(i => i.onchange = () => { S.cats[+i.dataset.i].name = i.value.trim() || 'Kategori'; save(); renderBlocks(); });
+  $$('#catList [data-del]').forEach(b => b.onclick = () => {
+    if (S.cats.length <= 1) return toast('Minimal satu kategori');
+    const c = S.cats[+b.dataset.del];
+    if (!confirm(`Hapus kategori "${c.name}"? Kegiatan dengan kategori ini akan jadi "Lainnya".`)) return;
+    S.cats.splice(+b.dataset.del, 1);
+    if (!S.cats.find(x => x.id === 'lainnya')) S.cats.push({...DEFAULT_CATS[6]});
+    for (const arr of Object.values(S.days)) arr.forEach(x => { if (x.cat === c.id) x.cat = 'lainnya'; });
+    save(); renderSettings(); renderBlocks();
+  });
+  $('#catAdd').onclick = () => { const cols = ['#06B6D4','#84CC16','#F97316','#E11D48','#8B5CF6','#0EA5E9']; S.cats.push({id: 'c' + uid(), name: 'Kategori baru', color: cols[S.cats.length % cols.length]}); save(); renderSettings(); };
+  $('#sModel').onchange = e => { st.aiModel = e.target.value; save(); if (llm.engine) toast('Model baru dipakai setelah dimuat ulang'); };
+  $('#sAuto').onchange = e => { st.aiAuto = e.target.checked; save(); };
+  $('#sLoadAI').onclick = () => { if (!llm.engine && !llm.loading) loadLLM(); };
+  bindPushSettings(); bindCalSettings();
+  $('#dExp').onclick = exportData;
+  $('#dImp').onclick = () => $('#importFile').click();
+  $('#dChat').onclick = () => { if (confirm('Hapus semua riwayat chat Jon?')) { S.chat = []; save(); renderChat(); toast('Riwayat chat dihapus'); } };
+  $('#dAll').onclick = () => { if (confirm('Hapus SEMUA jadwal, kategori & setelan? Tindakan ini tidak bisa dibatalkan.')) { S = defaults(); saveNow(); renderAll(); renderSettings(); toast('Semua data dihapus'); } };
+}
+function exportData() {
+  const blob = new Blob([JSON.stringify({app: 'DailyJon', ver: APP_VER, exported: new Date().toISOString(), data: S}, null, 1)], {type: 'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `dailyjon-cadangan-${today()}.json`;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  toast('File cadangan dibuat');
+}
+$('#importFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text()), d = j.data || j;
+    if (!d.days || !d.cats) throw new Error('format');
+    if (!confirm('Ganti semua data dengan isi cadangan ini?')) return;
+    const def = defaults(); S = {...def, ...d, settings: {...def.settings, ...(d.settings || {})}}; saveNow(); applyTheme(); renderAll(); renderSettings(); toast('Cadangan dipulihkan ✅');
+  } catch (err) { toast('File cadangan tidak valid'); }
+  e.target.value = '';
+};
+
+/* =========================================================
+   JON AI — mesin lokal (offline, Bahasa Indonesia)
+   ========================================================= */
+const CAT_KW = {
+  ibadah: ['sholat','shalat','salat','solat','subuh','dzuhur','zuhur','ashar','asar','maghrib','magrib','isya','ngaji','mengaji','quran','alquran','ibadah','gereja','misa','doa','tahajud','dhuha','jumatan','kajian','pengajian'],
+  olahraga: ['olahraga','gym','fitness','lari','jogging','renang','futsal','sepeda','bersepeda','yoga','workout','badminton','basket','bola','senam','push up','pushup','stretching','peregangan','jalan pagi','treadmill'],
+  belajar: ['belajar','kuliah','kelas','skripsi','tugas','baca','membaca','ujian','les','kursus','riset','revisi','bimbingan','dosen','latihan soal','materi','review','hafalan','bahasa inggris','toefl','ielts'],
+  kerja: ['rapat','meeting','kerja','kantor','laporan','klien','client','presentasi','email','proyek','project','coding','ngoding','deploy','jonbet','dinas','shift','jaga','wachtel','kapal','briefing','zoom','call kerja'],
+  istirahat: ['tidur','istirahat','makan','sarapan','santai','rebahan','nap','mandi','ngopi','rehat','break','jeda','makan siang','makan malam'],
+  pribadi: ['belanja','keluarga','teman','nonton','main','game','hangout','telepon','telpon','cuci','beres','bersih','masak','jalan-jalan','pacar','orang tua','ortu','arisan','potong rambut','servis']
+};
+function guessCat(title, strict) {
+  const t = ' ' + (title || '').toLowerCase() + ' ';
+  if (!t.trim()) return null;
+  const rec = recentTitles().find(r => r.title.toLowerCase() === t.trim());
+  if (rec && S.cats.find(c => c.id === rec.cat)) return rec.cat;
+  for (const [cat, kws] of Object.entries(CAT_KW)) if (kws.some(k => t.includes(k)) && S.cats.find(c => c.id === cat)) return cat;
+  const byName = S.cats.find(c => t.includes(c.name.toLowerCase()));
+  if (byName) return byName.id;
+  return strict ? null : (S.lastCat && S.cats.find(c => c.id === S.lastCat) ? S.lastCat : 'pribadi');
+}
+const PER = '(pagi|siang|sore|malam|pm|am)';
+function toMin(h, mm, per, isEnd) {
+  h = +h; mm = +(mm || 0); if (isNaN(h) || h > 24 || mm > 59) return null;
+  if (per === 'pagi' || per === 'am') { if (h === 12) h = 0; }
+  else if (per === 'siang') { if (h < 11) h += 12; }
+  else if (per === 'sore' || per === 'pm') { if (h < 12) h += 12; }
+  else if (per === 'malam') { if (h >= 5 && h < 12) h += 12; else if (h === 12) h = isEnd ? 24 : 0; }
+  const v = h * 60 + mm; return v > 1440 ? null : v;
+}
+function extractDate(t) {
+  const base = today(); let date = null, explicit = true;
+  const simple = [[/\blusa\b/, 2], [/\bbesok\b/, 1], [/\bkemarin\b/, -1], [/\b(hari ini|sekarang|nanti)\b/, 0]];
+  for (const [re, n] of simple) if (re.test(t)) { date = addDays(base, n); if (n !== 0 || !/sekarang|nanti/.test(t.match(re)[0])) t = t.replace(re, ' '); break; }
+  if (!date) { let m = t.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+    if (m) { const y = m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : new Date().getFullYear(); date = ymd(new Date(y, +m[2] - 1, +m[1])); t = t.replace(m[0], ' '); } }
+  if (!date) { const re = new RegExp(`\\b(?:tanggal|tgl)?\\s*(\\d{1,2})\\s+(${BULAN_FULL.join('|')}|jan|feb|mar|apr|jun|jul|agu|agt|agus|sep|sept|okt|nov|des)\\b(?:\\s+(\\d{4}))?`);
+    const m = t.match(re);
+    if (m) { const mi = BULAN_FULL.findIndex(b => b.startsWith(m[2].slice(0, 3))); let y = m[3] ? +m[3] : new Date().getFullYear(); let d = new Date(y, mi, +m[1]); if (!m[3] && ymd(d) < addDays(base, -30)) d = new Date(y + 1, mi, +m[1]); date = ymd(d); t = t.replace(m[0], ' '); } }
+  if (!date) { const m = t.match(/\b(?:tanggal|tgl)\s*(\d{1,2})\b/);
+    if (m) { const n = new Date(); let d = new Date(n.getFullYear(), n.getMonth(), +m[1]); if (ymd(d) < base) d = new Date(n.getFullYear(), n.getMonth() + 1, +m[1]); date = ymd(d); t = t.replace(m[0], ' '); } }
+  if (!date && /\bminggu depan\b/.test(t)) { date = addDays(base, 7); t = t.replace(/\bminggu depan\b/, ' '); }
+  if (!date && !/\bminggu (ini|lalu)\b/.test(t)) {
+    const m = t.match(/\b(?:hari\s+)?(senin|selasa|rabu|kamis|jumat|jum'at|sabtu|minggu|ahad)\b(\s+depan)?/);
+    if (m) { const map = {minggu: 0, ahad: 0, senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, "jum'at": 5, sabtu: 6};
+      const tgt = map[m[1]], dow = new Date().getDay(); let n = (tgt - dow + 7) % 7; if (m[2] && n === 0) n = 7; date = addDays(base, n); t = t.replace(m[0], ' '); }
+  }
+  if (!date) { date = viewDate; explicit = false; }
+  return {date, t, explicit};
+}
+function extractDur(t) {
+  let dur = null, m;
+  const W = {satu: 1, dua: 2, tiga: 3, empat: 4, lima: 5, enam: 6, tujuh: 7, delapan: 8};
+  if ((m = t.match(/\b(?:selama\s+)?(?:satu|1)\s+setengah\s+jam\b/))) dur = 90;
+  else if ((m = t.match(/\b(?:selama\s+)?setengah\s+jam\b/))) dur = 30;
+  else if ((m = t.match(/\b(?:selama\s+)?sejam\b/))) dur = 60;
+  else if ((m = t.match(/\b(?:selama\s+)?(\d+(?:[.,]\d+)?|satu|dua|tiga|empat|lima|enam|tujuh|delapan)\s*(jam|menit|mnt|min)\b/))) {
+    const n = W[m[1]] ?? parseFloat(m[1].replace(',', '.')); dur = m[2] === 'jam' ? n * 60 : n;
+  }
+  if (m) t = t.replace(m[0], ' ');
+  if (dur != null) dur = clamp(Math.round(dur / 10) * 10, 10, 1440);
+  return {dur, t};
+}
+function extractTimes(t) {
+  const ctxPer = (t.match(new RegExp('\\b' + PER + '\\b')) || [])[1];
+  const TP = `(?:(?:jam|pukul|pkl)\\.?\\s*)?(\\d{1,2})(?:[:.](\\d{2}))?\\s*${PER}?`;
+  const rangeRe = new RegExp(TP + '\\s*(?:-|–|—|sampai|sampe|hingga|s\\.?d\\.?|sd)\\s*' + TP);
+  let m = t.match(rangeRe), start = null, end = null;
+  if (m) {
+    const pS = m[3] || m[6] || ctxPer, pE = m[6] || m[3] || ctxPer;
+    start = toMin(m[1], m[2], pS); end = toMin(m[4], m[5], pE, true);
+    if (start != null && end != null && end <= start && !m[3] && m[6]) start = toMin(m[1], m[2], null);
+    if (start != null && end != null && end <= start && end + 720 <= 1440 && end + 720 > start) end += 720;
+    if (end === 0) end = 1440;
+    if (start != null && end != null && end > start) t = t.replace(m[0], ' '); else { start = end = null; }
+  }
+  if (start == null) {
+    const res = [new RegExp(`\\b(?:jam|pukul|pkl)\\.?\\s*(\\d{1,2})(?:[:.](\\d{2}))?\\s*${PER}?`), new RegExp(`\\b(\\d{1,2})[:.](\\d{2})\\s*${PER}?`), new RegExp(`\\b(\\d{1,2})()\\s*${PER}\\b`)];
+    for (const re of res) { m = t.match(re); if (m) { const v = toMin(m[1], m[2], m[3] || ctxPer); if (v != null && v < 1440) { start = v; t = t.replace(m[0], ' '); break; } } }
+  }
+  if (start != null) start = Math.floor(start / 10) * 10;
+  if (end != null) end = Math.min(1440, Math.ceil(end / 10) * 10);
+  return {start, end, t};
+}
+const FILLER = /\b(tolong|dong|donk|ya|yah|yuk|deh|aja|saja|please|pls|bisa|bisakah|aku|saya|gue|gw|mau|ingin|pengen|pingin|akan|ada|untuk|utk|tambah|tambahkan|tambahin|masukkan|masukin|catat|catatkan|jadwal|jadwalkan|jadwalin|agendakan|agenda|kegiatan|acara|bikin|bikinin|buatkan|buatin|buat|set|pasang|ingatkan|ingetin|pada|jam|pukul|mulai|dari|selama|hari|tanggal|tgl|lalu|terus|kemudian|jadi|sekarang|nanti)\b/g;
+function cleanTitle(t) {
+  let s = t.replace(FILLER, ' ').replace(/(?<!(?:makan|jalan|tidur|sholat|shalat|salat|kuliah|kelas|shift|jaga|jogging|lari|olahraga|senam|dinas) )\b(pagi|siang|sore|malam)\b/g, ' ').replace(/[,.;:!?]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!s) return '';
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+function findBlock(date, q, at) {
+  const arr = getDay(date);
+  if (at != null) { const b = arr.find(b => b.start <= at && at < b.end) || arr.find(b => b.start === at); if (b) return b; }
+  q = (q || '').toLowerCase().trim(); if (!q) return null;
+  const words = q.split(' ').filter(w => w.length > 2);
+  return arr.find(b => b.title.toLowerCase() === q) || arr.find(b => b.title.toLowerCase().includes(q)) || arr.find(b => q.includes(b.title.toLowerCase()))
+    || arr.find(b => words.some(w => b.title.toLowerCase().includes(w))) || arr.find(b => catOf(b.cat).name.toLowerCase() === q);
+}
+function findBlockAnyDay(q, at, date, explicit) {
+  if (explicit) { const b = findBlock(date, q, at); return b ? {b, date} : null; }
+  for (let i = 0; i < 8; i++) { const d = addDays(viewDate === today() ? today() : viewDate, i); const b = findBlock(d, q, at); if (b) return {b, date: d}; }
+  return null;
+}
+function daySummary(date) {
+  const arr = getDay(date);
+  if (!arr.length) return `Belum ada jadwal untuk ${fmtDateRel(date)}.`;
+  const tot = arr.reduce((a, b) => a + b.end - b.start, 0);
+  return `Jadwal ${fmtDateRel(date)} — ${arr.length} kegiatan, ${fmtDur(tot)}:\n` + arr.map(b => `• ${fmtMin(b.start)}–${fmtMin(b.end)}  ${b.title}`).join('\n');
+}
+const TEMPLATES = {
+  pagi: [[300, 330, 'Bangun & ibadah', 'ibadah'], [330, 390, 'Olahraga pagi', 'olahraga'], [390, 420, 'Mandi & sarapan', 'istirahat'], [420, 440, 'Rencanakan hari', 'pribadi']],
+  belajar: [[480, 570, 'Belajar fokus', 'belajar'], [570, 580, 'Istirahat', 'istirahat'], [580, 670, 'Belajar fokus', 'belajar'], [670, 690, 'Review & catatan', 'belajar']],
+  kerja: [[480, 600, 'Kerja fokus', 'kerja'], [600, 615, 'Istirahat', 'istirahat'], [615, 720, 'Kerja', 'kerja'], [720, 780, 'Makan siang', 'istirahat'], [780, 900, 'Kerja', 'kerja'], [900, 915, 'Istirahat', 'istirahat'], [915, 1020, 'Kerja ringan & email', 'kerja']],
+  malam: [[1140, 1200, 'Makan malam & santai', 'istirahat'], [1200, 1260, 'Baca / belajar ringan', 'belajar'], [1290, 1320, 'Evaluasi hari & rencana besok', 'pribadi'], [1320, 1440, 'Tidur', 'istirahat']],
+  libur: [[420, 480, 'Olahraga santai', 'olahraga'], [480, 540, 'Sarapan bersama', 'istirahat'], [600, 720, 'Waktu keluarga / teman', 'pribadi'], [780, 900, 'Hobi', 'pribadi'], [1020, 1080, 'Beres-beres & persiapan', 'pribadi']]
+};
+function buildPlan(kind, date) {
+  let tpl;
+  if (kind === 'produktif') tpl = [...TEMPLATES.pagi, ...TEMPLATES.belajar.map(x => [x[0] + 30, x[1] + 30, x[2], x[3]]), [750, 810, 'Makan siang & istirahat', 'istirahat'], [840, 960, 'Kerjakan tugas utama', 'kerja'], ...TEMPLATES.malam];
+  else tpl = TEMPLATES[kind] || TEMPLATES.pagi;
+  const ok = [], skip = [];
+  for (const [s, e, title, cat] of tpl) {
+    const c = S.cats.find(x => x.id === cat) ? cat : 'lainnya';
+    if (date === today() && e <= nowMin()) { skip.push(title); continue; }
+    if (overlaps(date, s, e) || ok.some(b => b.start < e && b.end > s)) { skip.push(title); continue; }
+    ok.push({start: s, end: e, title, cat: c});
+  }
+  return {ok, skip};
+}
+function allocate(date, title, cat, total) {
+  const out = []; let left = total;
+  for (const [s, e] of freeSlots(date, 20)) {
+    let t = s;
+    while (left > 0 && e - t >= 20) {
+      const len = Math.min(50, left, e - t); out.push({start: t, end: t + len, title, cat}); left -= len; t += len;
+      if (left > 0 && e - t >= 30) { out.push({start: t, end: t + 10, title: 'Istirahat', cat: S.cats.find(c => c.id === 'istirahat') ? 'istirahat' : cat}); t += 10; }
+    }
+    if (left <= 0) break;
+  }
+  return {blocks: out, left};
+}
+const TIPS = [
+  'Coba teknik 50/10: fokus 50 menit, istirahat 10 menit. Mulai dari tab Fokus.',
+  'Kerjakan tugas paling berat di jam energimu paling tinggi — biasanya pagi.',
+  'Sisakan blok kosong 30 menit di siang hari sebagai “penyangga” kalau ada hal mendadak.',
+  'Kelompokkan pekerjaan kecil (balas pesan, email) dalam satu blok, jangan dicicil sepanjang hari.',
+  'Malam hari, luangkan 10 menit untuk menyusun jadwal besok. Pagimu jadi lebih ringan.',
+  'Kalau malas mulai, pasang target kecil: “cuma 10 menit”. Biasanya kamu akan lanjut sendiri.',
+  'Tidur cukup 7–8 jam itu bagian dari produktivitas, bukan kebalikannya.',
+  'Taruh HP jauh-jauh atau aktifkan mode Fokus iPhone saat blok belajar/kerja.',
+  'Lihat tab Statistik tiap akhir pekan: apakah waktumu sudah sesuai prioritas?',
+  'Jangan isi 100% jam aktif. Jadwal yang realistis lebih mungkin dijalani.'
+];
+const HELP = `Aku Jon 🤖 — asisten jadwalmu. Contoh perintah:
+• “rapat jam 9 sampai 10.30”
+• “olahraga besok jam 6 pagi 1 jam”
+• “belajar skripsi senin jam 8 malam 2 jam”
+• “pindahkan rapat ke jam 14” / “undur rapat 30 menit”
+• “hapus olahraga besok”
+• “jadwal besok” · “waktu kosong hari ini”
+• “susun rutinitas pagi” / “rencanakan belajar 3 jam besok”
+• “statistik minggu ini” · “apa sekarang?” · “tips fokus”
+
+Kebiasaan:
+• “tambah kebiasaan minum air 8 gelas setiap hari”
+• “kebiasaan baca 20 menit senin rabu jumat ingatkan jam 8 malam”
+• “sudah minum air 2 gelas” · “selesai olahraga 30 menit” · “sudah subuh”
+• “progres kebiasaan” · “streak kebiasaan” · “gagal olahraga”
+
+Kalender & alarm iPhone:
+• “kirim jadwal ke kalender” · “masukkan jadwal minggu ini ke kalender”`;
+
+function localAI(raw) {
+  const text = ' ' + raw.toLowerCase().replace(/[“”"]/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+  const has = re => re.test(text);
+  const R = (txt, extra = {}) => ({handled: true, text: txt, ...extra});
+
+  if (has(/\b(bantuan|help|bisa apa|cara pakai|perintah apa|contoh perintah)\b/)) return R(HELP);
+  if (has(/\b(urungkan|undo)\b/) || has(/\bbatalkan (yang )?tadi\b/)) { if (!undoSnap) return R('Tidak ada perubahan terakhir yang bisa diurungkan.'); undo(); return R('Sudah kuurungkan ↩︎'); }
+  if (has(/\b(makasih|terima kasih|trims|thanks|thx)\b/)) return R('Sama-sama! Semangat menjalani harimu 💪');
+  if (has(/^\s*(halo|hai|hi|hey|hallo|p|assalamu\S*|selamat (pagi|siang|sore|malam)|pagi|siang|sore|malam)\s*(jon)?\s*$/)) {
+    const d = new Date(), h = d.getHours(), sapa = h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 18 ? 'Selamat sore' : 'Selamat malam';
+    return R(`${sapa}! ${h < 18 ? '☀️' : '🌙'}\n\n${nowText()}\n\nKetik “bantuan” untuk melihat apa saja yang bisa kubantu.`);
+  }
+
+  if (has(/\b(kalender|calendar|alarm)\b/) && !has(/\b(hapus)\b/)) {
+    const ex = extractDate(text);
+    if (has(/\bkebiasaan\b/)) { exportICS('habits'); return R('📅 File pengingat kebiasaan dibuka — ketuk “Tambahkan Semua” untuk memasukkannya ke Kalender iPhone.'); }
+    if (S.settings.scMode !== 'off') { const n = pendingSyncCount(); if (!n) return R('Semua jadwal sudah masuk Kalender & Alarm iPhone ✅'); setTimeout(() => syncNow(false), 600); return R(`📲 Mengirim ${n} perubahan jadwal ke Kalender${S.settings.scAlarm ? ' & Alarm' : ''} iPhone lewat Pintasan…`); }
+    if (ex.explicit && ex.date !== today()) { viewDate = ex.date; renderAll(); }
+    setTimeout(() => exportICS(has(/\b(minggu|seminggu|7 hari)\b/) ? 'week' : 'day'), 400);
+    return R(`📅 Membuka file kalender — ketuk “Tambahkan Semua”.\n\nMau otomatis + alarm Jam? Aktifkan Setelan → Kalender & Alarm iPhone → mode Otomatis (perlu membuat 1 pintasan, ada panduannya).`);
+  }
+  const hr = habitAI(text); if (hr) return hr;
+
+  const {date, t: t1, explicit} = extractDate(text);
+  const isWeek = has(/\bminggu (ini|lalu)\b|\bmingguan\b|\bseminggu\b/);
+
+  // kosongkan hari
+  if (has(/\b(kosongkan|hapus semua|bersihkan)\b/)) {
+    const arr = getDay(date); if (!arr.length) return R(`Jadwal ${fmtDateRel(date)} sudah kosong.`);
+    const k = snap(); setDay(date, []); save(); renderAll();
+    return R(`Jadwal ${fmtDateRel(date)} sudah kukosongkan (${arr.length} kegiatan dihapus).`, {undoK: k});
+  }
+  // hapus
+  if (has(/\b(hapus|hilangkan|buang|batalkan|batal|cancel)\b/)) {
+    const {start, t: t2} = extractTimes(t1);
+    const q = cleanTitle(t2.replace(/\b(hapus|hilangkan|buang|batalkan|batal|cancel)\b/g, ' '));
+    const f = findBlockAnyDay(q, start, date, explicit);
+    if (!f) return R(`Aku tidak menemukan kegiatan “${q || 'itu'}”${explicit ? ' di ' + fmtDateRel(date) : ''}. Coba sebut nama kegiatannya, mis. “hapus rapat besok”.`);
+    const k = snap(); setDay(f.date, getDay(f.date).filter(b => b.id !== f.b.id)); save(); renderAll();
+    return R(`🗑️ “${f.b.title}” (${fmtMin(f.b.start)}–${fmtMin(f.b.end)}, ${fmtDateRel(f.date)}) sudah dihapus.`, {undoK: k});
+  }
+  // pindah / undur / majukan
+  if (has(/\b(pindah|pindahkan|pindahin|geser|undur|undurkan|mundurkan|majukan|ubah jam|ganti jam|reschedule)\b/)) {
+    const verb = (text.match(/\b(pindah|pindahkan|pindahin|geser|undur|undurkan|mundurkan|majukan|ubah jam|ganti jam|reschedule)\b/) || [])[1];
+    const parts = raw.toLowerCase().split(/\bke\b/);
+    let srcTxt = ' ' + parts[0] + ' ', dstTxt = parts.length > 1 ? ' ' + parts.slice(1).join(' ke ') + ' ' : '';
+    const sd = extractDate(srcTxt), {dur, t: sNoDur} = extractDur(sd.t);
+    const st = extractTimes(sNoDur);
+    const q = cleanTitle(st.t.replace(/\b(pindah|pindahkan|pindahin|geser|undur|undurkan|mundurkan|majukan|ubah|ganti|reschedule)\b/g, ' '));
+    const f = findBlockAnyDay(q, st.start, sd.date, sd.explicit);
+    if (!f) return R(`Kegiatan “${q || 'itu'}” tidak ketemu. Contoh: “pindahkan rapat ke jam 14”.`);
+    const len = f.b.end - f.b.start; let nd = f.date, ns = f.b.start;
+    if (dstTxt) { const dd = extractDate(dstTxt); if (dd.explicit) nd = dd.date; const tt = extractTimes(dd.t); if (tt.start != null) ns = tt.start; if (!dd.explicit && tt.start == null) return R('Mau dipindah ke jam/hari apa? Contoh: “pindahkan rapat ke jam 14” atau “ke besok”.'); }
+    else if (dur) ns = f.b.start + (/majukan/.test(verb) ? -dur : dur);
+    else return R('Mau dipindah ke kapan? Contoh: “undur rapat 30 menit” atau “pindahkan rapat ke besok jam 9”.');
+    ns = clamp(Math.round(ns / 10) * 10, 0, 1440 - len);
+    const k = snap(); setDay(f.date, getDay(f.date).filter(b => b.id !== f.b.id));
+    placeBlock(nd, {...f.b, start: ns, end: ns + len}); save(); renderAll();
+    return R(`✅ “${f.b.title}” dipindah ke ${fmtDateRel(nd)}, ${fmtMin(ns)}–${fmtMin(ns + len)}.`, {undoK: k});
+  }
+  // susun / rencanakan
+  if (has(/\b(susun|susunkan|rencanakan|rancang|rutinitas|template|isi otomatis|isikan|atur jadwal|aturkan|bikinkan jadwal|buatkan jadwal|saran jadwal|sarankan jadwal)\b/)) {
+    const {dur, t: t2} = extractDur(t1);
+    if (dur) { // alokasikan durasi kegiatan ke waktu luang
+      let title = cleanTitle(t2.replace(/\b(susun|susunkan|rencanakan|rancang|atur|aturkan|alokasikan|sediakan|waktu)\b/g, ' ')) || 'Fokus';
+      const cat = guessCat(title);
+      const {blocks, left} = allocate(date, title, cat, dur);
+      if (!blocks.length) return R(`Tidak ada waktu luang cukup di ${fmtDateRel(date)} (jam aktif ${pad(S.settings.dayStart)}:00–${pad(S.settings.dayEnd)}:00).`);
+      return R(`Usulan ${title} ${fmtDur(dur)} di ${fmtDateRel(date)} (sesi 50 menit + istirahat):\n` + blocks.map(b => `• ${fmtMin(b.start)}–${fmtMin(b.end)}  ${b.title}`).join('\n') + (left > 0 ? `\n\n⚠️ Masih kurang ${fmtDur(left)} — waktu luangnya tidak cukup.` : ''), {plan: {date, blocks}});
+    }
+    const kind = has(/\bpagi\b/) ? 'pagi' : has(/\b(belajar|kuliah|skripsi|ujian)\b/) ? 'belajar' : has(/\b(kerja|kantor)\b/) ? 'kerja' : has(/\bmalam\b/) ? 'malam' : has(/\b(libur|akhir pekan|weekend|santai)\b/) ? 'libur' : 'produktif';
+    const {ok, skip} = buildPlan(kind, date);
+    if (!ok.length) return R(`Slot untuk rutinitas ${kind} di ${fmtDateRel(date)} sudah terisi semua. Coba hari lain atau kosongkan dulu beberapa kegiatan.`);
+    return R(`Usulan rutinitas ${kind} untuk ${fmtDateRel(date)}:\n` + ok.map(b => `• ${fmtMin(b.start)}–${fmtMin(b.end)}  ${b.title}`).join('\n') + (skip.length ? `\n\n(Dilewati karena bentrok/sudah lewat: ${skip.join(', ')})` : '') + '\n\nKetuk “Terapkan” untuk memasukkannya ke jadwal (tidak menimpa kegiatanmu).', {plan: {date, blocks: ok}});
+  }
+  // statistik
+  if (has(/\b(statistik|berapa (lama|jam|banyak)|total|analisis|analisa|evaluasi|produktif|produktivitas|rekap)\b/)) {
+    const dates = isWeek ? Array.from({length: 7}, (_, i) => addDays(weekStart(has(/minggu lalu/) ? addDays(today(), -7) : today()), i)) : [date];
+    const {m, tot} = sumByCat(dates);
+    if (!tot) return R(`Belum ada kegiatan tercatat ${isWeek ? 'minggu itu' : fmtDateRel(date)}.`);
+    const lines = Object.entries(m).sort((a, b) => b[1] - a[1]).map(([c, v]) => `• ${catOf(c).name}: ${fmtDur(v)} (${Math.round(v / tot * 100)}%)`);
+    const prev = sumByCat(dates.map(d => addDays(d, -dates.length))).tot;
+    let ins = '';
+    const top = Object.entries(m).sort((a, b) => b[1] - a[1])[0];
+    if (prev) ins += `\nDibanding ${isWeek ? 'minggu sebelumnya' : 'hari sebelumnya'}: ${tot >= prev ? 'naik' : 'turun'} ${Math.abs(Math.round((tot - prev) / prev * 100))}%.`;
+    ins += `\nPorsi terbesar: ${catOf(top[0]).name}.`;
+    if (!m.olahraga && S.cats.find(c => c.id === 'olahraga')) ins += ' Belum ada olahraga — coba selipkan 30 menit 💪';
+    if (m.istirahat && m.istirahat > tot * 0.5) ins += ' Waktu istirahat cukup dominan.';
+    return R(`📊 ${isWeek ? 'Minggu ' + (has(/minggu lalu/) ? 'lalu' : 'ini') : fmtDateRel(date)} — total ${fmtDur(tot)}:\n${lines.join('\n')}\n${ins}`);
+  }
+  // waktu luang
+  if (has(/\b(kosong|luang|senggang|free|longgar|lowong)\b/)) {
+    const fs = freeSlots(date, 30);
+    if (!fs.length) return R(`Tidak ada waktu luang ≥30 menit di ${fmtDateRel(date)} (jam ${pad(S.settings.dayStart)}–${pad(S.settings.dayEnd)}). Padat sekali! 😮`);
+    const tot = fs.reduce((a, [s, e]) => a + e - s, 0);
+    return R(`Waktu luang ${fmtDateRel(date)} (total ${fmtDur(tot)}):\n` + fs.map(([s, e]) => `• ${fmtMin(s)}–${fmtMin(e)}  (${fmtDur(e - s)})`).join('\n') + '\n\nMau kuisi? Contoh: “rencanakan belajar 2 jam ' + (date === today() ? 'hari ini' : 'besok') + '”.');
+  }
+  // tambah (kata kerja eksplisit atau ada jam)
+  const addVerb = has(/\b(tambah|tambahkan|tambahin|masukkan|masukin|catat|catatkan|jadwalkan|jadwalin|agendakan|buat|bikin|ingatkan|ingetin|set|pasang)\b/);
+  const {dur, t: t2} = extractDur(t1);
+  const tm = extractTimes(t2);
+  const nowStart = has(/\bsekarang\b/) && addVerb;
+  if (addVerb || tm.start != null) {
+    let start = tm.start, end = tm.end;
+    if (start == null && nowStart) start = Math.ceil(nowMin() / 10) * 10;
+    let title = cleanTitle(tm.t);
+    if (start == null) {
+      if (!title) return R('Kegiatan apa dan jam berapa? Contoh: “tambah rapat jam 9 sampai 10”.');
+      // tanpa jam: taruh di waktu luang pertama
+      const need = dur || 60; const slot = freeSlots(date, need)[0];
+      if (!slot) return R(`Tidak ada waktu luang ${fmtDur(need)} di ${fmtDateRel(date)}. Sebutkan jamnya, mis. “${title.toLowerCase()} jam 20”.`);
+      start = slot[0]; end = start + need;
+    }
+    if (end == null) end = Math.min(1440, start + (dur || 60));
+    if (end <= start) return R('Jam selesainya harus setelah jam mulai.');
+    if (!title) title = 'Kegiatan';
+    const cat = guessCat(title);
+    const clash = getDay(date).filter(b => b.start < end && b.end > start);
+    const k = snap(); const blk = {id: uid(), start, end, title, cat, note: '', remind: !!S.settings.remindDefault};
+    placeBlock(date, blk); S.lastCat = cat; save(); renderAll();
+    return R(`✅ Ditambahkan: **${title}**\n${fmtDateRel(date)}, ${fmtMin(start)}–${fmtMin(end)} (${fmtDur(end - start)}) · ${catOf(cat).name}` + (clash.length ? `\n⚠️ Menimpa: ${clash.map(b => b.title).join(', ')}` : ''), {undoK: k, goto: {date, start}});
+  }
+  // sekarang / berikutnya
+  if (has(/\b(sekarang|berikutnya|selanjutnya|next|lagi apa|ngapain sekarang)\b/)) return R(nowText());
+  // ringkasan jadwal
+  if (has(/\b(jadwal|agenda|acara|kegiatan|rencana|apa saja|ngapain|kesibukan)\b/) || explicit) {
+    if (isWeek) { const ds = Array.from({length: 7}, (_, i) => addDays(weekStart(today()), i)); return R(ds.map(d => { const a = getDay(d); return `${HARI_S[parseYmd(d).getDay()]} ${parseYmd(d).getDate()}: ${a.length ? a.length + ' kegiatan (' + fmtDur(a.reduce((x, b) => x + b.end - b.start, 0)) + ')' : '—'}`; }).join('\n')); }
+    return R(daySummary(date));
+  }
+  if (has(/\b(tips|saran|motivasi|semangat|capek|lelah|malas|males|fokus|prokrastinasi|menunda|stres|stress|produktif)\b/)) return R('💡 ' + TIPS[Math.floor(Math.random() * TIPS.length)]);
+  return {handled: false, text: `Hmm, aku belum paham maksudnya 🤔\n\n${HELP}${navigator.gpu ? '\n\nUntuk ngobrol bebas, aktifkan “AI Pintar” di Setelan → Jon AI.' : ''}`};
+}
+function nowText() {
+  const d = today(), m = nowMin(), arr = getDay(d);
+  const cur = arr.find(b => b.start <= m && m < b.end), nxt = arr.find(b => b.start > m);
+  let s = cur ? `Sekarang: ${cur.title} (${fmtMin(cur.start)}–${fmtMin(cur.end)}), sisa ${fmtDur(cur.end - m)}.` : `Sekarang ${fmtMin(m)} — tidak ada kegiatan terjadwal.`;
+  s += nxt ? `\nBerikutnya: ${nxt.title} jam ${fmtMin(nxt.start)} (${fmtDur(nxt.start - m)} lagi).` : '\nTidak ada kegiatan lagi hari ini.';
+  return s;
+}
+
+/* =========================================================
+   JON AI — AI Pintar on-device (WebLLM + WebGPU), opsional
+   ========================================================= */
+const llm = {engine: null, loading: false, status: 'Belum diaktifkan.', progress: 0, busy: false};
+function setAIStatus(s, p) {
+  llm.status = s; if (p != null) llm.progress = p;
+  const st = $('#aiStat'); if (st) st.textContent = s;
+  const pr = $('#aiProg'); if (pr) { pr.hidden = !llm.loading; pr.firstElementChild.style.width = (llm.progress * 100) + '%'; }
+  const bd = $('#aiBadge'); if (bd) { bd.textContent = llm.engine ? 'AI Pintar ✨' : llm.loading ? `Memuat ${Math.round(llm.progress * 100)}%` : 'AI Lokal'; bd.classList.toggle('smart', !!llm.engine); }
+}
+async function loadLLM() {
+  if (llm.engine || llm.loading) return;
+  if (!navigator.gpu) { toast('Browser ini belum mendukung WebGPU. Perbarui iPhone ke iOS terbaru.'); setAIStatus('WebGPU tidak tersedia — AI Lokal tetap bisa dipakai.'); return; }
+  llm.loading = true; setAIStatus('Memuat pustaka AI…', 0); if (view === 'set') renderSettings();
+  try {
+    const webllm = await import('https://esm.run/@mlc-ai/web-llm');
+    llm.engine = await webllm.CreateMLCEngine(S.settings.aiModel, {
+      initProgressCallback: r => setAIStatus(r.text || 'Mengunduh model…', r.progress ?? llm.progress)
+    });
+    llm.loading = false; S.settings.aiLoadedOnce = true; save();
+    setAIStatus('AI Pintar aktif ✅ — berjalan sepenuhnya di perangkat ini.', 1);
+    toast('AI Pintar siap ✨');
+  } catch (e) {
+    llm.loading = false; llm.engine = null;
+    setAIStatus('Gagal memuat AI Pintar: ' + (e?.message || e) + ' — coba model “Ringan” atau pastikan koneksi internet saat unduhan pertama.', 0);
+    toast('AI Pintar gagal dimuat');
+  }
+  if (view === 'set') renderSettings();
+}
+function llmContext() {
+  const t = today(), b = addDays(t, 1);
+  const fsT = freeSlots(t, 30).map(([s, e]) => `${fmtMin(s)}-${fmtMin(e)}`).join(', ') || 'tidak ada';
+  return `Kamu adalah Jon, asisten perencana harian di aplikasi DailyJon. Jawab dalam Bahasa Indonesia yang santai, singkat, jelas (maks 6 kalimat atau daftar pendek). Jangan mengarang kegiatan pengguna.
+Sekarang: ${fmtDate(t)} ${t}, jam ${fmtMin(nowMin())}. Jam aktif pengguna ${pad(S.settings.dayStart)}:00-${pad(S.settings.dayEnd)}:00.
+${daySummary(t)}
+Waktu luang hari ini: ${fsT}.
+${daySummary(b)}${viewDate !== t && viewDate !== b ? '\n' + daySummary(viewDate) : ''}
+Kategori: ${S.cats.map(c => c.name).join(', ')}.
+${habitStatus(t)}
+Jika pengguna MEMINTA menambah kegiatan, tulis di baris tersendiri persis seperti: AKSI: tambah | YYYY-MM-DD | HH:MM | HH:MM | Judul
+Jika pengguna MEMINTA menghapus kegiatan: AKSI: hapus | YYYY-MM-DD | Judul
+Jika pengguna melaporkan progres kebiasaan: AKSI: catat | Nama kebiasaan | jumlah (angka, menit untuk kebiasaan waktu; kosongkan jumlah jika selesai)
+Jangan menulis AKSI kalau pengguna tidak memintanya.`;
+}
+async function llmReply(userText) {
+  if (llm.busy) { toast('Jon masih menjawab…'); return; }
+  llm.busy = true;
+  const hist = S.chat.slice(-9, -1).filter(m => m.text).map(m => ({role: m.role === 'me' ? 'user' : 'assistant', content: m.text.slice(0, 600)}));
+  const msgs = [{role: 'system', content: llmContext()}, ...hist, {role: 'user', content: userText}];
+  const msg = pushMsg({role: 'ai', text: '…', typing: true});
+  const node = $(`#m-${msg.id} .tx`);
+  let out = '';
+  try {
+    const stream = await llm.engine.chat.completions.create({messages: msgs, temperature: 0.5, max_tokens: 450, stream: true});
+    for await (const ch of stream) { out += ch.choices?.[0]?.delta?.content || ''; if (node) node.innerHTML = fmtMsg(out.replace(/^AKSI:.*$/gm, '').trim() || '…'); scrollChat(); }
+  } catch (e) { out = out || ('Maaf, AI Pintar error: ' + (e?.message || e)); }
+  llm.busy = false;
+  // jalankan AKSI
+  const done = []; let k = 0;
+  for (const line of out.split('\n')) {
+    const mc = line.match(/^\s*AKSI:\s*catat\s*\|\s*([^|]+?)\s*(?:\|\s*([\d.,]*)\s*)?$/i);
+    if (mc) { const h = matchHabit(mc[1].toLowerCase()); if (h) { if (!k) k = snap(); const d0 = today(), cur = hLog(d0, h.id)?.v || 0, n = parseFloat((mc[2] || '').replace(',', '.'));
+      if (h.type === 'check') hSet(d0, h.id, {v: 1}); else if (h.type === 'list') hSet(d0, h.id, {steps: h.steps.map(s => s.id)}); else hSet(d0, h.id, {v: isNaN(n) ? Math.max(cur, hGoal(h)) : cur + n});
+      done.push(`✅ ${h.icon} ${h.name}: ${hValTxt(h, d0)}`); } continue; }
+    const m = line.match(/^\s*AKSI:\s*(tambah|hapus)\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*(.+)$/i); if (!m) continue;
+    const parts = m[3].split('|').map(s => s.trim());
+    if (!k) k = snap();
+    if (m[1].toLowerCase() === 'tambah' && parts.length >= 3) {
+      const tm = v => { const x = v.match(/^(\d{1,2})[:.](\d{2})$/); return x ? +x[1] * 60 + +x[2] : null; };
+      let s = tm(parts[0]), e = tm(parts[1]); const title = parts.slice(2).join(' ').trim() || 'Kegiatan';
+      if (s == null || e == null) continue; if (e === 0) e = 1440; s = Math.floor(s / 10) * 10; e = Math.ceil(e / 10) * 10; if (e <= s) continue;
+      const cat = guessCat(title); placeBlock(m[2], {id: uid(), start: s, end: e, title, cat, note: '', remind: !!S.settings.remindDefault}); done.push(`➕ ${title} ${fmtDateRel(m[2])} ${fmtMin(s)}–${fmtMin(e)}`);
+    } else if (m[1].toLowerCase() === 'hapus') {
+      const b = findBlock(m[2], parts.join(' ')); if (b) { setDay(m[2], getDay(m[2]).filter(x => x.id !== b.id)); done.push(`🗑️ ${b.title} (${fmtDateRel(m[2])})`); }
+    }
+  }
+  let finalText = out.replace(/^\s*AKSI:.*$/gim, '').trim() || 'Oke.';
+  if (done.length) { save(); renderAll(); finalText += '\n\n' + done.join('\n'); msg.undoK = k; }
+  msg.text = finalText; msg.typing = false; save(); renderChat();
+}
+
+/* ---------------- Chat UI ---------------- */
+function fmtMsg(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
+function msgHtml(m) {
+  let acts = '';
+  if (m.plan && !m.applied) acts += `<button class="pri" data-act="apply" data-id="${m.id}">Terapkan</button>`;
+  if (m.applied) acts += `<button disabled>✓ Diterapkan</button>`;
+  if (m.goto) acts += `<button data-act="goto" data-id="${m.id}">Lihat di grid</button>`;
+  if (m.gotoH) acts += `<button data-act="gotoH" data-id="${m.id}">Buka Kebiasaan</button>`;
+  if (m.undoK && undoSnap && undoSnap.key === m.undoK) acts += `<button data-act="undo" data-id="${m.id}">Urungkan</button>`;
+  return `<div class="msg ${m.role}${m.typing ? ' typing' : ''}" id="m-${m.id}"><div class="tx">${fmtMsg(m.text)}</div>${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
+}
+function renderChat() {
+  const box = $('#chatLog');
+  if (!S.chat.length) box.innerHTML = msgHtml({id: 'w', role: 'ai', text: `Hai! Aku Jon ✨\nAku bisa mengatur jadwal (tambah, pindah, hapus, cari waktu luang, susun rutinitas) dan kebiasaanmu (buat kebiasaan, catat progres, cek streak) — cukup ketik seperti ngobrol.\n\nCoba: “olahraga besok jam 6 pagi 1 jam”.`});
+  else box.innerHTML = S.chat.map(msgHtml).join('');
+  box.innerHTML += `<div class="sugs" id="sugs">${['Apa sekarang?', 'Progres kebiasaan', 'Jadwal hari ini', 'Waktu kosong hari ini', 'Tambah kebiasaan minum air 8 gelas', 'Susun rutinitas pagi besok', 'Rencanakan belajar 2 jam besok', 'Streak kebiasaan', 'Statistik minggu ini', 'Tips fokus', 'Bantuan'].map(s => `<button class="chip">${s}</button>`).join('')}</div>`;
+  $$('#sugs .chip').forEach(b => b.onclick = () => sendChat(b.textContent));
+  scrollChat();
+}
+function scrollChat() { if (view === 'ai') requestAnimationFrame(() => scrollTo(0, document.body.scrollHeight)); }
+function pushMsg(m) {
+  m.id = m.id || uid(); S.chat.push(m); if (S.chat.length > 80) S.chat = S.chat.slice(-80); save(); renderChat(); return m;
+}
+async function sendChat(text) {
+  text = (text || '').trim(); if (!text) return;
+  pushMsg({role: 'me', text}); $('#chatIn').value = '';
+  const r = localAI(text);
+  if (r.handled) { pushMsg({role: 'ai', text: r.text, undoK: r.undoK, plan: r.plan, goto: r.goto, gotoH: r.gotoH}); return; }
+  if (llm.engine) { await llmReply(text); return; }
+  if (llm.loading) { pushMsg({role: 'ai', text: 'AI Pintar sedang dimuat, tunggu sebentar ya… Sementara itu aku bisa bantu perintah jadwal biasa.\n\n' + HELP}); return; }
+  pushMsg({role: 'ai', text: r.text});
+}
+$('#chatLog').addEventListener('click', e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const m = S.chat.find(x => x.id === b.dataset.id); if (!m) return;
+  if (b.dataset.act === 'apply' && m.plan) {
+    const k = snap(); m.plan.blocks.forEach(x => placeBlock(m.plan.date, {id: uid(), note: '', remind: !!S.settings.remindDefault, ...x}));
+    m.applied = true; m.undoK = k; save(); renderAll(); renderChat(); toast(`${m.plan.blocks.length} kegiatan ditambahkan`, {undoK: k});
+  }
+  if (b.dataset.act === 'undo') { undo(m.undoK); renderChat(); }
+  if (b.dataset.act === 'gotoH') show('habits');
+  if (b.dataset.act === 'goto' && m.goto) { show('plan'); setDate(m.goto.date); setTimeout(() => scrollToHour(Math.max(0, Math.floor(m.goto.start / 60) - 1)), 50); }
+});
+$('#chatSend').onclick = () => sendChat($('#chatIn').value);
+$('#chatIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); sendChat($('#chatIn').value); } });
+
+/* =========================================================
+   Navigasi & siklus aplikasi
+   ========================================================= */
+const scrollPos = {};
+function show(v) {
+  if (v === view) { if (v === 'plan') scrollToHour(); return; }
+  scrollPos[view] = scrollY; view = v; document.body.classList.toggle('v-ai', v === 'ai');
+  $$('.view').forEach(x => x.classList.toggle('active', x.id === 'view-' + v));
+  $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  $('#chatbar').hidden = v !== 'ai';
+  renderHeader();
+  if (v === 'habits') renderHabits();
+  if (v === 'stats') renderStats();
+  if (v === 'focus') renderFocus();
+  if (v === 'set') renderSettings();
+  if (v === 'ai') { renderChat(); setAIStatus(llm.status); }
+  if (v === 'plan') { renderNow(); renderBlocks(); scrollTo(0, scrollPos.plan ?? 0); } else if (v !== 'ai') scrollTo(0, 0);
+}
+$$('#tabs button').forEach(b => b.onclick = () => show(b.dataset.v));
+function renderAll() { renderHeader(); renderNow(); renderBlocks(); renderHabits(); if (view === 'stats') renderStats(); if (view === 'focus') renderFocus(); }
+
+// keyboard iPhone: jaga kolom chat & sheet tetap terlihat
+if (window.visualViewport) {
+  const vv = visualViewport;
+  const onVV = () => { const kb = Math.max(0, innerHeight - vv.height - vv.offsetTop); document.body.classList.toggle('kb', kb > 80); document.documentElement.style.setProperty('--kb', (kb > 80 ? kb : 0) + 'px'); };
+  vv.addEventListener('resize', onVV); vv.addEventListener('scroll', onVV);
+}
+
+// tips pasang di iPhone (hanya saat dibuka di Safari, belum dipasang)
+(function installTip() {
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  if (!ios || standalone || S.settings.hideInstall) return;
+  const el = $('#installTip'); el.hidden = false;
+  el.innerHTML = `<span style="font-size:22px">📲</span><span style="flex:1">Pasang DailyJon: ketuk <b>Bagikan</b> lalu <b>Tambahkan ke Layar Utama</b>.</span><button id="itX" class="muted" style="font-size:18px;padding:4px">✕</button>`;
+  $('#itX').onclick = () => { S.settings.hideInstall = true; save(); el.hidden = true; };
+})();
+
+// loop: tiap detik untuk timer, tiap 20 detik untuk garis waktu & pengingat
+let lastDay = today(), lastMinute = -1;
+setInterval(() => {
+  tickTimer(); tickHabitTimer();
+  const d = today();
+  if (d !== lastDay) { const wasToday = viewDate === lastDay, wasH = hDate === lastDay; lastDay = d; if (wasToday) viewDate = d; if (wasH) hDate = d; renderAll(); }
+  const m = nowMin();
+  if (m !== lastMinute) { lastMinute = m; if (view === 'plan') { renderNow(); renderNowLine(); $$('#grid .seg').length && viewDate === d && renderBlocks(); } checkReminders(); checkHabitReminders(); }
+}, 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { lastMinute = -1; renderAll(); setTimeout(syncOnOpen, 800); setTimeout(() => pushSchedule(), 1500); } });
+
+// mulai
+applyTheme(); buildGrid(); renderAll(); setAIStatus(llm.status);
+requestAnimationFrame(() => scrollToHour());
+if (S.settings.startTab && S.settings.startTab !== 'plan') show(S.settings.startTab);
+setTimeout(syncOnOpen, 1500);
+setTimeout(() => pushSchedule(), 2500);
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+try { navigator.storage?.persist?.(); } catch (e) {}
+if (S.settings.aiAuto && S.settings.aiLoadedOnce && navigator.gpu) setTimeout(loadLLM, 1500);
+</script>
+</body>
+</html>
